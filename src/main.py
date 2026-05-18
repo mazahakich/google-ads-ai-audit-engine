@@ -3,11 +3,11 @@ from __future__ import annotations
 import json
 import sys
 
-from checks import generate_findings, load_check_catalog
-from claude_reporter import ClaudeReporterError, generate_markdown_report, write_report
-from config import ConfigError, load_settings
-from google_ads_client import GoogleAdsClientError, build_google_ads_client
-from metrics import fetch_campaign_metrics
+from .checks import generate_findings, load_check_catalog
+from .claude_reporter import ClaudeReporterError, generate_markdown_report, write_report
+from .config import ConfigError, load_settings
+from .google_ads_client import GoogleAdsClientError, build_google_ads_client
+from .metrics import fetch_campaign_metrics
 
 
 def run() -> int:

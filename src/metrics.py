@@ -4,7 +4,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
-from google_ads_client import GoogleAdsClientError
+from .google_ads_client import GoogleAdsClientError
 
 
 @dataclass

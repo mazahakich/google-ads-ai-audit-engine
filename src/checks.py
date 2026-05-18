@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from metrics import CampaignMetrics
+from .metrics import CampaignMetrics
 
 
 def load_check_catalog(path: Path) -> dict[str, dict]:
