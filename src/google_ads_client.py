@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from google.ads.googleads.client import GoogleAdsClient
 
-from config import Settings
+from .config import Settings
 
 
 class GoogleAdsClientError(Exception):
