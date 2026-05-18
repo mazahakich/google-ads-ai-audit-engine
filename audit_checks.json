@@ -1,0 +1,38 @@
+[
+  {
+    "check_id": "PERF_001",
+    "category": "performance",
+    "name": "Spend increased without proportional conversion growth",
+    "severity": "high",
+    "condition_description": "Cost increased, but conversions did not grow proportionally.",
+    "why_it_matters": "Budget is scaling faster than results, which can reduce efficiency and hide wasted spend.",
+    "recommendation": "Review campaign-level spend allocation, bidding strategy, search terms, asset groups, and audience/geographic segments."
+  },
+  {
+    "check_id": "PERF_002",
+    "category": "performance",
+    "name": "ROAS decreased significantly",
+    "severity": "high",
+    "condition_description": "ROAS dropped materially compared with the previous period.",
+    "why_it_matters": "Revenue efficiency is declining, which can hurt contribution margin.",
+    "recommendation": "Check campaigns, products, geographies, devices, and search terms responsible for the ROAS decline."
+  },
+  {
+    "check_id": "PERF_003",
+    "category": "performance",
+    "name": "Spend without conversions",
+    "severity": "medium",
+    "condition_description": "Campaign spent a meaningful amount but generated zero conversions.",
+    "why_it_matters": "Budget may be going to low-intent traffic, weak placements, wrong search terms, or tracking issues.",
+    "recommendation": "Review traffic quality, query relevance, conversion tracking, landing page performance, and exclusions."
+  },
+  {
+    "check_id": "STRUCT_001",
+    "category": "structure",
+    "name": "Campaign is active but has very low conversion value",
+    "severity": "medium",
+    "condition_description": "Campaign is spending and receiving conversions, but conversion value is low or zero.",
+    "why_it_matters": "The account may be optimizing toward low-value actions or conversion values may be missing.",
+    "recommendation": "Verify primary conversion actions, conversion values, enhanced conversions, and bidding goals."
+  }
+]
