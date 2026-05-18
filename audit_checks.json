@@ -331,5 +331,68 @@
     "condition_description": "Asset group name does not clearly indicate product category, service, audience, market, or intent.",
     "why_it_matters": "Weak asset group naming makes optimization, reporting, and creative/product mapping harder.",
     "recommendation": "Improve naming conventions so each asset group clearly reflects its purpose."
+  },
+  {
+    "check_id": "SEG_001",
+    "category": "geo",
+    "name": "Geographic segment spent without conversions",
+    "severity": "high",
+    "condition_description": "A geographic segment spent a meaningful amount but generated zero conversions.",
+    "why_it_matters": "Budget may be leaking into locations that do not produce business outcomes.",
+    "recommendation": "Review location performance and consider exclusions, bid adjustments, or campaign splits."
+  },
+  {
+    "check_id": "SEG_002",
+    "category": "geo",
+    "name": "Geographic segment has poor ROAS",
+    "severity": "high",
+    "condition_description": "A geographic segment generated spend and value but ROAS is materially below target.",
+    "why_it_matters": "Underperforming locations can reduce account-level profitability.",
+    "recommendation": "Review location bid strategy, targeting settings, budget allocation, and location exclusions."
+  },
+  {
+    "check_id": "SEG_003",
+    "category": "device",
+    "name": "Device segment spent without conversions",
+    "severity": "medium",
+    "condition_description": "A device segment spent a meaningful amount but generated zero conversions.",
+    "why_it_matters": "Device-level performance differences can hide wasted spend and conversion rate problems.",
+    "recommendation": "Review device performance, landing page UX, checkout/form behavior, and bid strategy."
+  },
+  {
+    "check_id": "SEG_004",
+    "category": "device",
+    "name": "Device segment has poor ROAS",
+    "severity": "medium",
+    "condition_description": "A device segment generated spend and value but ROAS is materially below target.",
+    "why_it_matters": "One device type may be dragging down overall campaign efficiency.",
+    "recommendation": "Review device-level ROAS, conversion rate, CPC, and user experience."
+  },
+  {
+    "check_id": "SEG_005",
+    "category": "schedule",
+    "name": "Day of week spent without conversions",
+    "severity": "medium",
+    "condition_description": "A day-of-week segment spent a meaningful amount but generated zero conversions.",
+    "why_it_matters": "Budget may be spent on days that do not produce results.",
+    "recommendation": "Review day-of-week performance and consider ad schedule adjustments if the pattern is consistent."
+  },
+  {
+    "check_id": "SEG_006",
+    "category": "schedule",
+    "name": "Hour of day spent without conversions",
+    "severity": "medium",
+    "condition_description": "An hour-of-day segment spent a meaningful amount but generated zero conversions.",
+    "why_it_matters": "Budget may be leaking during low-intent or low-conversion hours.",
+    "recommendation": "Review hourly performance and consider schedule adjustments if the pattern is consistent."
+  },
+  {
+    "check_id": "SEG_007",
+    "category": "segment_concentration",
+    "name": "Spend concentrated in one segment",
+    "severity": "medium",
+    "condition_description": "One geo, device, day, or hour segment receives a disproportionate share of spend.",
+    "why_it_matters": "Spend concentration can hide risk and reduce control over optimization.",
+    "recommendation": "Validate that spend concentration matches actual profitability and business priorities."
   }
 ]

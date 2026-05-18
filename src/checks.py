@@ -7,6 +7,7 @@ from .conversions import ConversionAction
 from .metrics import CampaignMetrics
 from .pmax import PMaxAssetGroupMetrics, pmax_campaigns_from_metrics
 from .search_terms import SearchTermMetrics
+from .segments import DeviceSegmentMetrics, GeoSegmentMetrics, SegmentMetrics, TimeSegmentMetrics
 
 PERF_001_COST_INCREASE_THRESHOLD = 20
 ROAS_DROP_THRESHOLD = 0.30
@@ -60,6 +61,11 @@ PMAX_LOW_ROAS_COST_THRESHOLD = 50
 PMAX_LOW_ROAS_THRESHOLD = 1.0
 PMAX_SPEND_CONCENTRATION_THRESHOLD = 0.70
 PMAX_FINDING_LIMIT = 20
+SEGMENT_WASTED_SPEND_THRESHOLD = 50
+HOUR_SEGMENT_WASTED_SPEND_THRESHOLD = 30
+SEGMENT_POOR_ROAS_THRESHOLD = 1.0
+SEGMENT_CONCENTRATION_THRESHOLD = 0.70
+SEGMENT_FINDING_LIMIT = 25
 WEAK_PMAX_ASSET_GROUP_NAMES = (
     "asset group",
     "assetgroup",
@@ -307,6 +313,44 @@ def limit_pmax_findings(findings: list[dict]) -> list[dict]:
             -finding.get("context", {}).get("cost", 0),
         ),
     )[:PMAX_FINDING_LIMIT]
+
+
+def segment_context(
+    segment: SegmentMetrics,
+    *,
+    segment_type: str,
+    segment_value: str,
+    spend_share: float = 0,
+    location_type: str = "",
+) -> dict:
+    context = {
+        "campaign_id": segment.campaign_id,
+        "campaign_status": segment.campaign_status,
+        "segment_type": segment_type,
+        "segment_value": segment_value,
+        "cost": round(segment.cost, 2),
+        "clicks": segment.clicks,
+        "impressions": segment.impressions,
+        "conversions": round(segment.conversions, 2),
+        "conversion_value": round(segment.conversion_value, 2),
+        "ctr": round(segment.ctr, 4),
+        "cpa": round(segment.cpa, 2),
+        "roas": round(segment.roas, 2),
+        "spend_share": round(spend_share, 4),
+    }
+    if location_type:
+        context["location_type"] = location_type
+    return context
+
+
+def limit_segment_findings(findings: list[dict]) -> list[dict]:
+    return sorted(
+        findings,
+        key=lambda finding: (
+            highest_severity_rank(finding),
+            -finding.get("context", {}).get("cost", 0),
+        ),
+    )[:SEGMENT_FINDING_LIMIT]
 
 
 def load_check_catalog(path: Path) -> dict[str, dict]:
@@ -636,3 +680,174 @@ def generate_pmax_findings(
                 )
 
     return limit_pmax_findings(findings)
+
+
+def generate_segment_findings(
+    geo_segments: list[GeoSegmentMetrics],
+    device_segments: list[DeviceSegmentMetrics],
+    day_segments: list[TimeSegmentMetrics],
+    hour_segments: list[TimeSegmentMetrics],
+    check_catalog: dict[str, dict],
+) -> list[dict]:
+    findings: list[dict] = []
+
+    findings.extend(
+        generate_geo_segment_findings(geo_segments, check_catalog)
+    )
+    findings.extend(
+        generate_generic_segment_findings(
+            device_segments,
+            check_catalog,
+            entity_type="device",
+            value_getter=lambda segment: segment.device,
+            wasted_check_id="SEG_003",
+            poor_roas_check_id="SEG_004",
+            wasted_spend_threshold=SEGMENT_WASTED_SPEND_THRESHOLD,
+        )
+    )
+    findings.extend(
+        generate_generic_segment_findings(
+            day_segments,
+            check_catalog,
+            entity_type="day_of_week",
+            value_getter=lambda segment: segment.segment_value,
+            wasted_check_id="SEG_005",
+            poor_roas_check_id=None,
+            wasted_spend_threshold=SEGMENT_WASTED_SPEND_THRESHOLD,
+        )
+    )
+    findings.extend(
+        generate_generic_segment_findings(
+            hour_segments,
+            check_catalog,
+            entity_type="hour_of_day",
+            value_getter=lambda segment: segment.segment_value,
+            wasted_check_id="SEG_006",
+            poor_roas_check_id=None,
+            wasted_spend_threshold=HOUR_SEGMENT_WASTED_SPEND_THRESHOLD,
+        )
+    )
+
+    return limit_segment_findings(findings)
+
+
+def generate_geo_segment_findings(
+    segments: list[GeoSegmentMetrics],
+    check_catalog: dict[str, dict],
+) -> list[dict]:
+    findings: list[dict] = []
+    spend_by_campaign = campaign_segment_spend(segments)
+
+    for segment in segments:
+        triggered_checks: list[dict] = []
+        campaign_key = segment_key(segment)
+        spend_share = segment.cost / spend_by_campaign[campaign_key] if spend_by_campaign.get(campaign_key) else 0
+
+        if segment.cost > SEGMENT_WASTED_SPEND_THRESHOLD and segment.conversions == 0:
+            triggered_checks.append(check_catalog["SEG_001"])
+        if segment.cost > SEGMENT_WASTED_SPEND_THRESHOLD and segment.conversion_value > 0 and segment.roas < SEGMENT_POOR_ROAS_THRESHOLD:
+            triggered_checks.append(check_catalog["SEG_002"])
+        if spend_share > SEGMENT_CONCENTRATION_THRESHOLD:
+            triggered_checks.append(check_catalog["SEG_007"])
+
+        if triggered_checks:
+            findings.append(
+                segment_finding(
+                    segment,
+                    entity_type="geo",
+                    entity_name=segment.segment_name,
+                    triggered_checks=triggered_checks,
+                    context=segment_context(
+                        segment,
+                        segment_type="geo",
+                        segment_value=segment.segment_name,
+                        spend_share=spend_share,
+                        location_type=segment.location_type,
+                    ),
+                )
+            )
+
+    return findings
+
+
+def generate_generic_segment_findings(
+    segments: list[SegmentMetrics],
+    check_catalog: dict[str, dict],
+    *,
+    entity_type: str,
+    value_getter,
+    wasted_check_id: str,
+    poor_roas_check_id: str | None,
+    wasted_spend_threshold: float,
+) -> list[dict]:
+    findings: list[dict] = []
+    spend_by_campaign = campaign_segment_spend(segments)
+
+    for segment in segments:
+        triggered_checks: list[dict] = []
+        segment_value = str(value_getter(segment))
+        campaign_key = segment_key(segment)
+        spend_share = segment.cost / spend_by_campaign[campaign_key] if spend_by_campaign.get(campaign_key) else 0
+
+        if segment.cost > wasted_spend_threshold and segment.conversions == 0:
+            triggered_checks.append(check_catalog[wasted_check_id])
+        if (
+            poor_roas_check_id
+            and segment.cost > SEGMENT_WASTED_SPEND_THRESHOLD
+            and segment.conversion_value > 0
+            and segment.roas < SEGMENT_POOR_ROAS_THRESHOLD
+        ):
+            triggered_checks.append(check_catalog[poor_roas_check_id])
+        if spend_share > SEGMENT_CONCENTRATION_THRESHOLD:
+            triggered_checks.append(check_catalog["SEG_007"])
+
+        if triggered_checks:
+            findings.append(
+                segment_finding(
+                    segment,
+                    entity_type=entity_type,
+                    entity_name=segment_value,
+                    triggered_checks=triggered_checks,
+                    context=segment_context(
+                        segment,
+                        segment_type=entity_type,
+                        segment_value=segment_value,
+                        spend_share=spend_share,
+                    ),
+                )
+            )
+
+    return findings
+
+
+def segment_finding(
+    segment: SegmentMetrics,
+    *,
+    entity_type: str,
+    entity_name: str,
+    triggered_checks: list[dict],
+    context: dict,
+) -> dict:
+    return {
+        "scope": "segment",
+        "entity_type": entity_type,
+        "entity_name": entity_name,
+        "campaign": segment.campaign_name,
+        "triggered_checks": triggered_checks,
+        "checks": triggered_checks,
+        "context": context,
+    }
+
+
+def campaign_segment_spend(segments: list[SegmentMetrics]) -> dict[int | str, float]:
+    spend_by_campaign: dict[int | str, float] = {}
+
+    for segment in segments:
+        key = segment_key(segment)
+        spend_by_campaign[key] = spend_by_campaign.get(key, 0) + segment.cost
+
+    return spend_by_campaign
+
+
+def segment_key(segment: SegmentMetrics) -> int | str:
+    return segment.campaign_id if segment.campaign_id is not None else segment.campaign_name
