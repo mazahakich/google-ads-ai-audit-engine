@@ -74,10 +74,64 @@
   {
     "check_id": "STRUCT_001",
     "category": "structure",
-    "name": "Campaign is active but has very low conversion value",
+    "name": "Enabled campaign has no impressions",
     "severity": "medium",
-    "condition_description": "Campaign is spending and receiving conversions, but conversion value is low or zero.",
-    "why_it_matters": "The account may be optimizing toward low-value actions or conversion values may be missing.",
-    "recommendation": "Verify primary conversion actions, conversion values, enhanced conversions, and bidding goals."
+    "condition_description": "Campaign is enabled but received no impressions in the latest period.",
+    "why_it_matters": "The campaign may be blocked by targeting, budget, bidding, policy, ad assets, or setup issues.",
+    "recommendation": "Review campaign status, ad approvals, budget, bid strategy, geo targeting, audiences, assets, and policy limitations."
+  },
+  {
+    "check_id": "STRUCT_002",
+    "category": "structure",
+    "name": "Search campaign includes Display Network",
+    "severity": "high",
+    "condition_description": "Search campaign appears to have Display Network/content network enabled.",
+    "why_it_matters": "Display expansion can mix intent levels and make Search performance harder to evaluate.",
+    "recommendation": "Review network settings and separate Search and Display traffic unless there is a clear strategic reason."
+  },
+  {
+    "check_id": "STRUCT_003",
+    "category": "structure",
+    "name": "Search Partners enabled",
+    "severity": "medium",
+    "condition_description": "Search Partners are enabled for the campaign.",
+    "why_it_matters": "Search Partners can perform differently from Google Search and may dilute performance if not monitored separately.",
+    "recommendation": "Review Search Partners performance and disable if it is inefficient or not aligned with campaign goals."
+  },
+  {
+    "check_id": "STRUCT_004",
+    "category": "bidding",
+    "name": "Maximize Conversions without value guardrail",
+    "severity": "medium",
+    "condition_description": "Campaign uses Maximize Conversions while conversion value is important or ROAS is being evaluated.",
+    "why_it_matters": "If the business goal is revenue or margin, volume-based bidding may optimize for more conversions rather than better-value conversions.",
+    "recommendation": "Review whether Maximize Conversion Value, target ROAS, or a value-based strategy is more appropriate."
+  },
+  {
+    "check_id": "STRUCT_005",
+    "category": "tracking",
+    "name": "Conversions present but conversion value missing",
+    "severity": "high",
+    "condition_description": "Campaign generated conversions but conversion value is zero in the latest period.",
+    "why_it_matters": "Value-based optimization and ROAS analysis become unreliable when revenue/value signals are missing.",
+    "recommendation": "Verify purchase value tracking, primary conversion actions, enhanced conversions, imported values, and attribution setup."
+  },
+  {
+    "check_id": "STRUCT_006",
+    "category": "pmax",
+    "name": "Performance Max campaign requires deeper asset group audit",
+    "severity": "low",
+    "condition_description": "Performance Max campaign is active and should be audited at asset group, listing group, audience signal, and search category level.",
+    "why_it_matters": "PMax can hide inefficient segments unless asset groups, product groups, search categories, audience signals, and creative assets are reviewed separately.",
+    "recommendation": "Add a dedicated PMax audit module for asset groups, listing groups, audience signals, creatives, and search category insights."
+  },
+  {
+    "check_id": "STRUCT_007",
+    "category": "account_structure",
+    "name": "Campaign naming does not clearly indicate brand/non-brand segmentation",
+    "severity": "low",
+    "condition_description": "Campaign name does not clearly indicate whether traffic is brand, non-brand, competitor, shopping, PMax, remarketing, or prospecting.",
+    "why_it_matters": "Weak naming conventions make account analysis, reporting, and budget governance harder.",
+    "recommendation": "Review naming conventions and ensure campaign names clearly reflect campaign type, funnel stage, market, and intent segment."
   }
 ]
