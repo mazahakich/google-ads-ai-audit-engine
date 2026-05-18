@@ -133,5 +133,68 @@
     "condition_description": "Campaign name does not clearly indicate whether traffic is brand, non-brand, competitor, shopping, PMax, remarketing, or prospecting.",
     "why_it_matters": "Weak naming conventions make account analysis, reporting, and budget governance harder.",
     "recommendation": "Review naming conventions and ensure campaign names clearly reflect campaign type, funnel stage, market, and intent segment."
+  },
+  {
+    "check_id": "TRACK_001",
+    "category": "tracking",
+    "name": "No primary conversion actions detected",
+    "severity": "high",
+    "condition_description": "No active primary conversion actions were detected in the account.",
+    "why_it_matters": "Google Ads bidding and reporting may not have a reliable primary optimization signal.",
+    "recommendation": "Verify that the correct lead, purchase, or revenue-driving conversion actions are set as primary."
+  },
+  {
+    "check_id": "TRACK_002",
+    "category": "tracking",
+    "name": "Multiple primary conversion actions may dilute optimization",
+    "severity": "medium",
+    "condition_description": "Multiple primary conversion actions are active and included in the conversions metric.",
+    "why_it_matters": "Smart bidding may optimize toward mixed actions with different business value.",
+    "recommendation": "Review whether all primary conversions represent meaningful business outcomes and move softer actions to secondary if needed."
+  },
+  {
+    "check_id": "TRACK_003",
+    "category": "tracking",
+    "name": "Purchase or lead conversion action missing",
+    "severity": "high",
+    "condition_description": "No clear purchase or lead conversion action was detected.",
+    "why_it_matters": "The account may be optimizing toward proxy events rather than actual business outcomes.",
+    "recommendation": "Confirm that purchase, lead, booking, form submission, or other revenue-driving actions are implemented and set correctly."
+  },
+  {
+    "check_id": "TRACK_004",
+    "category": "tracking",
+    "name": "Conversion value may be missing",
+    "severity": "high",
+    "condition_description": "Primary conversion actions appear to use zero or missing default value.",
+    "why_it_matters": "ROAS and value-based bidding become unreliable when conversion value is missing or incorrectly configured.",
+    "recommendation": "Verify dynamic purchase values, imported revenue, enhanced conversions, and value settings for primary conversion actions."
+  },
+  {
+    "check_id": "TRACK_005",
+    "category": "tracking",
+    "name": "Always use default value enabled",
+    "severity": "medium",
+    "condition_description": "A conversion action is configured to always use the default value.",
+    "why_it_matters": "Static values can hide order value differences and reduce the quality of value-based optimization.",
+    "recommendation": "Use dynamic transaction values where possible, especially for ecommerce and variable lead value models."
+  },
+  {
+    "check_id": "TRACK_006",
+    "category": "tracking",
+    "name": "Inactive or removed conversion actions present",
+    "severity": "low",
+    "condition_description": "Inactive or removed conversion actions are still present in the account.",
+    "why_it_matters": "Legacy conversion actions can confuse reporting and make audit interpretation harder.",
+    "recommendation": "Review old conversion actions and clean up or document legacy tracking setup."
+  },
+  {
+    "check_id": "TRACK_007",
+    "category": "attribution",
+    "name": "Legacy attribution model detected",
+    "severity": "medium",
+    "condition_description": "A conversion action appears to use an older attribution model instead of a modern/default data-driven model.",
+    "why_it_matters": "Attribution model differences can distort campaign performance comparisons and optimization signals.",
+    "recommendation": "Review attribution settings and align them with current Google Ads best practices and reporting requirements."
   }
 ]

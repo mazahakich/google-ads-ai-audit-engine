@@ -28,6 +28,9 @@ Client context:
 
 Findings JSON:
 {json.dumps(findings, indent=2)}
+
+Findings may be campaign-level, account-level, or conversion-action-level. Use the scope,
+entity type, campaign setup, metrics, and context fields when present.
 """.strip()
 
 

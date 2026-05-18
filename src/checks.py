@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .conversions import ConversionAction
 from .metrics import CampaignMetrics
 
 PERF_001_COST_INCREASE_THRESHOLD = 20
@@ -31,6 +32,20 @@ CAMPAIGN_NAME_STRUCTURE_INDICATORS = (
     "youtube",
     "demand",
 )
+BUSINESS_OUTCOME_CONVERSION_INDICATORS = (
+    "purchase",
+    "lead",
+    "booking",
+    "form",
+    "sign up",
+    "signup",
+    "subscribe",
+    "sale",
+    "checkout",
+    "conversion",
+    "contact",
+)
+MODERN_ATTRIBUTION_MODEL = "DATA_DRIVEN"
 
 
 def normalize_enum(value) -> str:
@@ -53,6 +68,53 @@ def campaign_name_has_structure_signal(campaign_name: str) -> bool:
     normalized_name = campaign_name.lower().replace("_", " ").replace("-", " ")
     normalized_indicators = [indicator.replace("-", " ") for indicator in CAMPAIGN_NAME_STRUCTURE_INDICATORS]
     return any(indicator in normalized_name for indicator in normalized_indicators)
+
+
+def conversion_action_is_enabled(action: ConversionAction) -> bool:
+    return normalize_enum(action.status) == "ENABLED"
+
+
+def conversion_action_is_primary_or_included(action: ConversionAction) -> bool:
+    return conversion_action_is_enabled(action) and (
+        action.primary_for_goal or action.include_in_conversions_metric
+    )
+
+
+def conversion_action_has_business_outcome_signal(action: ConversionAction) -> bool:
+    text = f"{action.name} {action.category}".lower().replace("_", " ").replace("-", " ")
+    return any(indicator in text for indicator in BUSINESS_OUTCOME_CONVERSION_INDICATORS)
+
+
+def conversion_action_context(action: ConversionAction) -> dict:
+    return {
+        "conversion_action_id": action.id,
+        "category": action.category,
+        "type": action.type,
+        "status": action.status,
+        "primary_for_goal": action.primary_for_goal,
+        "include_in_conversions_metric": action.include_in_conversions_metric,
+        "default_value": action.default_value,
+        "always_use_default_value": action.always_use_default_value,
+        "counting_type": action.counting_type,
+        "attribution_model": action.attribution_model,
+    }
+
+
+def conversion_finding(
+    checks: list[dict],
+    *,
+    entity_type: str,
+    entity_name: str,
+    context: dict | None = None,
+) -> dict:
+    return {
+        "scope": "account",
+        "entity_type": entity_type,
+        "entity_name": entity_name,
+        "triggered_checks": checks,
+        "checks": checks,
+        "context": context or {},
+    }
 
 
 def load_check_catalog(path: Path) -> dict[str, dict]:
@@ -140,5 +202,102 @@ def generate_findings(campaign_data: dict[str, CampaignMetrics], check_catalog: 
                     "checks": triggered_checks,
                 }
             )
+
+    return findings
+
+
+def generate_conversion_findings(
+    conversion_actions: list[ConversionAction],
+    check_catalog: dict[str, dict],
+    campaign_data: dict[str, CampaignMetrics] | None = None,
+) -> list[dict]:
+    findings: list[dict] = []
+    enabled_primary_actions = [
+        action for action in conversion_actions if conversion_action_is_primary_or_included(action)
+    ]
+    inactive_actions = [
+        action for action in conversion_actions if not conversion_action_is_enabled(action)
+    ]
+    account_has_conversion_value = any(
+        data.last7_value > 0 or data.prev7_value > 0 for data in (campaign_data or {}).values()
+    )
+
+    if not enabled_primary_actions:
+        findings.append(
+            conversion_finding(
+                [check_catalog["TRACK_001"]],
+                entity_type="account_tracking",
+                entity_name="Account conversion tracking",
+                context={
+                    "enabled_primary_or_included_conversion_actions": 0,
+                    "total_conversion_actions": len(conversion_actions),
+                },
+            )
+        )
+
+    if len(enabled_primary_actions) > 3:
+        findings.append(
+            conversion_finding(
+                [check_catalog["TRACK_002"]],
+                entity_type="account_tracking",
+                entity_name="Account conversion tracking",
+                context={
+                    "enabled_primary_or_included_conversion_actions": len(enabled_primary_actions),
+                    "conversion_action_names": [action.name for action in enabled_primary_actions],
+                },
+            )
+        )
+
+    if enabled_primary_actions and not any(
+        conversion_action_has_business_outcome_signal(action) for action in enabled_primary_actions
+    ):
+        findings.append(
+            conversion_finding(
+                [check_catalog["TRACK_003"]],
+                entity_type="account_tracking",
+                entity_name="Account conversion tracking",
+                context={
+                    "enabled_primary_or_included_conversion_actions": len(enabled_primary_actions),
+                    "conversion_action_names": [action.name for action in enabled_primary_actions],
+                },
+            )
+        )
+
+    for action in enabled_primary_actions:
+        triggered_checks: list[dict] = []
+        context = {
+            **conversion_action_context(action),
+            "account_has_conversion_value_metrics": account_has_conversion_value,
+        }
+
+        if action.default_value in (None, 0):
+            triggered_checks.append(check_catalog["TRACK_004"])
+
+        if action.always_use_default_value:
+            triggered_checks.append(check_catalog["TRACK_005"])
+
+        attribution_model = normalize_enum(action.attribution_model)
+        if attribution_model and MODERN_ATTRIBUTION_MODEL not in attribution_model:
+            triggered_checks.append(check_catalog["TRACK_007"])
+
+        if triggered_checks:
+            findings.append(
+                conversion_finding(
+                    triggered_checks,
+                    entity_type="conversion_action",
+                    entity_name=action.name,
+                    context=context,
+                )
+            )
+
+    for action in inactive_actions:
+        findings.append(
+            conversion_finding(
+                [check_catalog["TRACK_006"]],
+                entity_type="conversion_action",
+                entity_name=action.name,
+                context=conversion_action_context(action),
+            )
+        )
 
     return findings
