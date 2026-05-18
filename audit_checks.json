@@ -196,5 +196,77 @@
     "condition_description": "A conversion action appears to use an older attribution model instead of a modern/default data-driven model.",
     "why_it_matters": "Attribution model differences can distort campaign performance comparisons and optimization signals.",
     "recommendation": "Review attribution settings and align them with current Google Ads best practices and reporting requirements."
+  },
+  {
+    "check_id": "QUERY_001",
+    "category": "search_terms",
+    "name": "Search term spent without conversions",
+    "severity": "high",
+    "condition_description": "Search term spent a meaningful amount but generated zero conversions.",
+    "why_it_matters": "Budget may be wasted on low-intent or irrelevant queries.",
+    "recommendation": "Review the query and add it as an exact or phrase negative if it is not relevant."
+  },
+  {
+    "check_id": "QUERY_002",
+    "category": "search_terms",
+    "name": "High-click query with no conversions",
+    "severity": "medium",
+    "condition_description": "Search term generated a meaningful number of clicks but no conversions.",
+    "why_it_matters": "The query may be attracting traffic that does not match the offer, landing page, or conversion intent.",
+    "recommendation": "Review search intent, landing page relevance, match type, and negative keyword opportunities."
+  },
+  {
+    "check_id": "QUERY_003",
+    "category": "search_terms",
+    "name": "Low CTR search term",
+    "severity": "medium",
+    "condition_description": "Search term has impressions but weak click-through rate.",
+    "why_it_matters": "Low CTR may indicate weak relevance, poor ad copy alignment, or broad-match leakage.",
+    "recommendation": "Review ad relevance, keyword mapping, match type, and whether the term should be excluded."
+  },
+  {
+    "check_id": "QUERY_004",
+    "category": "search_terms",
+    "name": "Informational intent query detected",
+    "severity": "medium",
+    "condition_description": "Search term appears to have informational intent rather than commercial intent.",
+    "why_it_matters": "Informational traffic can consume budget without strong purchase or lead intent.",
+    "recommendation": "Review whether informational queries should be excluded, separated into a different campaign, or handled through SEO/content."
+  },
+  {
+    "check_id": "QUERY_005",
+    "category": "search_terms",
+    "name": "Competitor query detected",
+    "severity": "medium",
+    "condition_description": "Search term appears to reference a competitor or comparison intent.",
+    "why_it_matters": "Competitor traffic can be expensive and may convert differently from direct-intent queries.",
+    "recommendation": "Review competitor query performance separately and decide whether to isolate, reduce bids, or exclude."
+  },
+  {
+    "check_id": "QUERY_006",
+    "category": "search_terms",
+    "name": "Brand query appearing in non-brand campaign",
+    "severity": "high",
+    "condition_description": "Brand-like query appears in a campaign that does not seem to be a brand campaign.",
+    "why_it_matters": "Brand traffic mixed into non-brand campaigns can inflate performance and distort scaling decisions.",
+    "recommendation": "Separate brand and non-brand traffic and add brand negatives to non-brand campaigns where appropriate."
+  },
+  {
+    "check_id": "QUERY_007",
+    "category": "search_terms",
+    "name": "Non-brand query appearing in brand campaign",
+    "severity": "medium",
+    "condition_description": "Non-brand query appears in a campaign that seems to be intended for brand traffic.",
+    "why_it_matters": "Non-brand traffic in brand campaigns can distort brand reporting and budget control.",
+    "recommendation": "Review campaign query mapping and add negatives or split campaigns by intent."
+  },
+  {
+    "check_id": "QUERY_008",
+    "category": "search_terms",
+    "name": "Query has poor ROAS",
+    "severity": "high",
+    "condition_description": "Search term generated spend and conversion value but ROAS is materially below the acceptable threshold.",
+    "why_it_matters": "Some converting queries may still be unprofitable if value is too low relative to cost.",
+    "recommendation": "Review query profitability, bid strategy, match type, landing page, and potential exclusions."
   }
 ]

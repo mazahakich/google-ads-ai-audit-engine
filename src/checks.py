@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .conversions import ConversionAction
 from .metrics import CampaignMetrics
+from .search_terms import SearchTermMetrics
 
 PERF_001_COST_INCREASE_THRESHOLD = 20
 ROAS_DROP_THRESHOLD = 0.30
@@ -46,6 +47,41 @@ BUSINESS_OUTCOME_CONVERSION_INDICATORS = (
     "contact",
 )
 MODERN_ATTRIBUTION_MODEL = "DATA_DRIVEN"
+SEARCH_TERM_SPEND_WITHOUT_CONVERSIONS_THRESHOLD = 30
+SEARCH_TERM_HIGH_CLICK_THRESHOLD = 20
+SEARCH_TERM_LOW_CTR_IMPRESSIONS_THRESHOLD = 100
+SEARCH_TERM_LOW_CTR_THRESHOLD = 0.01
+SEARCH_TERM_POOR_ROAS_COST_THRESHOLD = 30
+SEARCH_TERM_POOR_ROAS_THRESHOLD = 1.0
+SEARCH_TERM_FINDING_LIMIT = 25
+INFORMATIONAL_QUERY_TERMS = (
+    "how",
+    "what",
+    "why",
+    "guide",
+    "tutorial",
+    "example",
+    "free",
+    "meaning",
+    "definition",
+    "review",
+    "reddit",
+    "forum",
+    "pdf",
+    "template",
+)
+COMPETITOR_QUERY_TERMS = (
+    "vs",
+    "versus",
+    "alternative",
+    "alternatives",
+    "competitor",
+    "competitors",
+    "compare",
+    "comparison",
+)
+BRAND_CAMPAIGN_INDICATORS = ("brand", "branded")
+SEVERITY_RANK = {"high": 0, "medium": 1, "low": 2}
 
 
 def normalize_enum(value) -> str:
@@ -115,6 +151,68 @@ def conversion_finding(
         "checks": checks,
         "context": context or {},
     }
+
+
+def normalized_text(value: str) -> str:
+    return value.lower().replace("_", " ").replace("-", " ")
+
+
+def search_term_context(term: SearchTermMetrics) -> dict:
+    return {
+        "search_term": term.search_term,
+        "campaign_id": term.campaign_id,
+        "campaign_status": term.campaign_status,
+        "ad_group_id": term.ad_group_id,
+        "cost": round(term.cost, 2),
+        "clicks": term.clicks,
+        "impressions": term.impressions,
+        "conversions": round(term.conversions, 2),
+        "conversion_value": round(term.conversion_value, 2),
+        "ctr": round(term.ctr, 4),
+        "average_cpc": round(term.average_cpc, 2),
+        "cpa": round(term.cpa, 2),
+        "roas": round(term.roas, 2),
+    }
+
+
+def query_contains_any(search_term: str, indicators: tuple[str, ...]) -> bool:
+    query = normalized_text(search_term)
+    query_words = set(query.split())
+
+    for indicator in indicators:
+        normalized_indicator = normalized_text(indicator)
+        if " " in normalized_indicator:
+            if normalized_indicator in query:
+                return True
+        elif normalized_indicator in query_words:
+            return True
+
+    return False
+
+
+def query_contains_brand_term(search_term: str, brand_terms: tuple[str, ...]) -> bool:
+    query = normalized_text(search_term)
+    return any(normalized_text(term) in query for term in brand_terms)
+
+
+def campaign_name_is_brand(campaign_name: str) -> bool:
+    return query_contains_any(campaign_name, BRAND_CAMPAIGN_INDICATORS)
+
+
+def highest_severity_rank(finding: dict) -> int:
+    checks = finding.get("triggered_checks") or finding.get("checks") or []
+    severities = [SEVERITY_RANK.get(check.get("severity", "low"), 2) for check in checks]
+    return min(severities, default=2)
+
+
+def limit_search_term_findings(findings: list[dict]) -> list[dict]:
+    return sorted(
+        findings,
+        key=lambda finding: (
+            highest_severity_rank(finding),
+            -finding.get("context", {}).get("cost", 0),
+        ),
+    )[:SEARCH_TERM_FINDING_LIMIT]
 
 
 def load_check_catalog(path: Path) -> dict[str, dict]:
@@ -301,3 +399,53 @@ def generate_conversion_findings(
         )
 
     return findings
+
+
+def generate_search_term_findings(
+    search_terms: list[SearchTermMetrics],
+    check_catalog: dict[str, dict],
+    brand_terms: tuple[str, ...] = (),
+) -> list[dict]:
+    findings: list[dict] = []
+
+    for term in search_terms:
+        triggered_checks: list[dict] = []
+        is_brand_campaign = campaign_name_is_brand(term.campaign_name)
+        query_has_brand = query_contains_brand_term(term.search_term, brand_terms) if brand_terms else False
+
+        if term.cost > SEARCH_TERM_SPEND_WITHOUT_CONVERSIONS_THRESHOLD and term.conversions == 0:
+            triggered_checks.append(check_catalog["QUERY_001"])
+        if term.clicks >= SEARCH_TERM_HIGH_CLICK_THRESHOLD and term.conversions == 0:
+            triggered_checks.append(check_catalog["QUERY_002"])
+        if term.impressions >= SEARCH_TERM_LOW_CTR_IMPRESSIONS_THRESHOLD and term.ctr < SEARCH_TERM_LOW_CTR_THRESHOLD:
+            triggered_checks.append(check_catalog["QUERY_003"])
+        if query_contains_any(term.search_term, INFORMATIONAL_QUERY_TERMS):
+            triggered_checks.append(check_catalog["QUERY_004"])
+        if query_contains_any(term.search_term, COMPETITOR_QUERY_TERMS):
+            triggered_checks.append(check_catalog["QUERY_005"])
+        if brand_terms and not is_brand_campaign and query_has_brand:
+            triggered_checks.append(check_catalog["QUERY_006"])
+        if brand_terms and is_brand_campaign and not query_has_brand:
+            triggered_checks.append(check_catalog["QUERY_007"])
+        if (
+            term.cost > SEARCH_TERM_POOR_ROAS_COST_THRESHOLD
+            and term.conversion_value > 0
+            and term.roas < SEARCH_TERM_POOR_ROAS_THRESHOLD
+        ):
+            triggered_checks.append(check_catalog["QUERY_008"])
+
+        if triggered_checks:
+            findings.append(
+                {
+                    "scope": "search_term",
+                    "entity_type": "search_term",
+                    "entity_name": term.search_term,
+                    "campaign": term.campaign_name,
+                    "ad_group": term.ad_group_name,
+                    "triggered_checks": triggered_checks,
+                    "checks": triggered_checks,
+                    "context": search_term_context(term),
+                }
+            )
+
+    return limit_search_term_findings(findings)

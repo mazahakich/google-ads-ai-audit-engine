@@ -20,6 +20,7 @@ class Settings:
     google_ads_login_customer_id: str
     google_ads_customer_id: str
     anthropic_api_key: str
+    brand_terms: tuple[str, ...]
     audit_checks_path: Path
     reports_dir: Path
 
@@ -52,8 +53,14 @@ def load_settings() -> Settings:
         raise ConfigError(f"Missing required environment variables: {joined}")
 
     root = Path(__file__).resolve().parent.parent
+    brand_terms = tuple(
+        term.strip().lower()
+        for term in os.getenv("BRAND_TERMS", "").split(",")
+        if term.strip()
+    )
     return Settings(
         **values,
+        brand_terms=brand_terms,
         audit_checks_path=root / "audit_checks.json",
         reports_dir=root / "reports",
     )
