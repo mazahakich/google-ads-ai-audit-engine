@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "manual_audit_patterns.schema.json",
+  "title": "Manual Google Ads Audit Patterns",
+  "description": "Schema for manual Google Ads audit patterns used as source material for future automated checks. The schema accepts the current extracted-audit format and the standardized future pattern format.",
+  "type": "array",
+  "items": {
+    "oneOf": [
+      {
+        "$ref": "#/$defs/standard_pattern"
+      },
+      {
+        "$ref": "#/$defs/current_extracted_pattern"
+      }
+    ]
+  },
+  "$defs": {
+    "standard_pattern": {
+      "type": "object",
+      "description": "Preferred standardized structure for newly extracted manual audit patterns.",
+      "additionalProperties": false,
+      "required": [
+        "pattern_id",
+        "audit_area",
+        "issue_name",
+        "how_to_detect",
+        "data_required",
+        "severity_default",
+        "why_it_matters",
+        "recommendation",
+        "example_client_language",
+        "implementation_status"
+      ],
+      "properties": {
+        "pattern_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable unique identifier for the manual audit pattern."
+        },
+        "audit_area": {
+          "$ref": "#/$defs/audit_area",
+          "description": "Primary Google Ads audit area covered by this pattern."
+        },
+        "issue_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Short issue name suitable for an audit finding title."
+        },
+        "how_to_detect": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Plain-English detection guidance, including what an auditor looks for manually or what automation should evaluate."
+        },
+        "data_required": {
+          "$ref": "#/$defs/string_list",
+          "description": "Reports, segments, Google Ads API fields, or external data needed to detect the pattern."
+        },
+        "severity_default": {
+          "$ref": "#/$defs/severity",
+          "description": "Default severity before account-specific context is applied."
+        },
+        "why_it_matters": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Business or optimization risk created by the issue."
+        },
+        "recommendation": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Recommended action an auditor would give the client."
+        },
+        "example_client_language": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Example client-facing explanation in the style of a manual audit."
+        },
+        "implementation_status": {
+          "$ref": "#/$defs/implementation_status",
+          "description": "Current automation lifecycle status for this pattern."
+        },
+        "related_check_ids": {
+          "$ref": "#/$defs/string_list",
+          "description": "Existing or proposed automated check IDs related to this pattern."
+        },
+        "source_audit": {
+          "type": "string",
+          "description": "Optional source audit, client-safe document name, or internal reference."
+        },
+        "source_excerpt": {
+          "type": "string",
+          "description": "Optional short excerpt from the manual audit that motivated this pattern."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional context, caveats, false-positive risks, or reviewer notes."
+        },
+        "implementation_notes": {
+          "type": "string",
+          "description": "Notes for engineering or analytics implementation."
+        },
+        "suggested_api_fields": {
+          "$ref": "#/$defs/string_list",
+          "description": "Candidate Google Ads API fields needed for automated detection."
+        },
+        "suggested_detection_logic": {
+          "type": "string",
+          "description": "Proposed rule, threshold, heuristic, or algorithm for automated detection."
+        },
+        "dependencies": {
+          "$ref": "#/$defs/string_list",
+          "description": "Other modules, configuration values, data sources, or checks this pattern depends on."
+        }
+      }
+    },
+    "current_extracted_pattern": {
+      "type": "object",
+      "description": "Current structure used by audit_framework/manual_audit_patterns.json. Keep supported so existing extracted patterns validate while future entries migrate to standard_pattern.",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "channel",
+        "category",
+        "pattern_name",
+        "symptom",
+        "evidence_cue",
+        "root_cause",
+        "fix",
+        "severity",
+        "impact_area",
+        "benchmark"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable identifier used by the current extracted pattern file."
+        },
+        "channel": {
+          "type": "string",
+          "const": "google_ads",
+          "description": "Advertising channel this manual audit pattern applies to."
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Legacy category label from the extracted manual audit pattern."
+        },
+        "pattern_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Legacy issue or pattern title."
+        },
+        "symptom": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Observed symptom in the account or report."
+        },
+        "evidence_cue": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Manual report view, comparison, or cue that supports detection."
+        },
+        "root_cause": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Likely explanation or diagnostic hypothesis from the manual audit."
+        },
+        "fix": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Recommended manual audit action."
+        },
+        "severity": {
+          "$ref": "#/$defs/severity_without_critical",
+          "description": "Legacy default severity for the extracted pattern."
+        },
+        "impact_area": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Business metric or optimization area affected by the pattern."
+        },
+        "benchmark": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Manual threshold, heuristic, or benchmark used to decide when the pattern matters."
+        }
+      }
+    },
+    "audit_area": {
+      "type": "string",
+      "enum": [
+        "account_structure",
+        "campaign_structure",
+        "bidding_strategy",
+        "budget_allocation",
+        "conversion_tracking",
+        "measurement",
+        "search_terms",
+        "keywords",
+        "negative_keywords",
+        "performance_max",
+        "shopping_feed",
+        "merchant_center",
+        "geo_targeting",
+        "device_performance",
+        "ad_schedule",
+        "audiences",
+        "creatives_assets",
+        "landing_pages",
+        "attribution",
+        "reporting",
+        "other"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "severity_without_critical": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "implementation_status": {
+      "type": "string",
+      "enum": ["planned", "in_progress", "implemented", "rejected", "needs_review"]
+    },
+    "string_list": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}
