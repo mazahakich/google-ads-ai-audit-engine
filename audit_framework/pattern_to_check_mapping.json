@@ -1,0 +1,939 @@
+[
+  {
+    "pattern_id": "ga-001-roas-decline-30d-vs-90d",
+    "issue_name": "ROAS erosion in recent window vs. trailing 90d",
+    "audit_area": "reporting",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "PERF_002",
+      "PERF_004"
+    ],
+    "coverage_notes": "Campaign-level ROAS and CPA deterioration are covered for last-7 vs previous-7 windows, but the manual 30d vs trailing-90d account-level comparison is not implemented.",
+    "recommended_next_step": "Add account-level date-window comparison support for 30d vs 90d ROAS and cost/conv.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-002-budget-reallocation-search-to-shopping",
+    "issue_name": "Budget shifted from Search to Shopping degrades blended ROAS",
+    "audit_area": "budget_allocation",
+    "coverage_status": "needs_review",
+    "related_check_ids": [
+      "PERF_007"
+    ],
+    "coverage_notes": "Spend concentration is covered, but channel mix shift from Search to Shopping and blended ROAS degradation is not implemented.",
+    "recommended_next_step": "Add campaign-type mix reporting with share-of-spend and ROAS trend comparisons.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-003-shopping-conversion-rate-drag",
+    "issue_name": "Shopping mix-shift drags overall CR down",
+    "audit_area": "campaign_structure",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "No campaign-type conversion-rate mix module exists yet.",
+    "recommended_next_step": "Add campaign-type mix analysis for Search, Shopping, PMax, and blended CR movement.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-004-pmax-budget-starved",
+    "issue_name": "PMax budget cut starves automated channels",
+    "audit_area": "budget_allocation",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "STRUCT_006",
+      "PMAX_001"
+    ],
+    "coverage_notes": "PMax campaigns are detected and flagged for deeper review, but budget starvation or share-of-spend thresholds are not implemented.",
+    "recommended_next_step": "Add PMax share-of-spend and status history checks.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-005-shopping-cannibalises-search",
+    "issue_name": "Shopping cannibalises Search and pits brand against marketplaces",
+    "audit_area": "campaign_structure",
+    "coverage_status": "needs_review",
+    "related_check_ids": [
+      "QUERY_006",
+      "QUERY_007"
+    ],
+    "coverage_notes": "Brand/non-brand search-term mixing is partially covered, but Shopping cannibalization and marketplace auction insight analysis are not implemented.",
+    "recommended_next_step": "Add Shopping query theme and Auction Insights analysis.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-006-shopping-cpc-inflation",
+    "issue_name": "Shopping CPC inflation outpacing revenue growth",
+    "audit_area": "reporting",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Shopping CPC inflation and YoY conversion value comparison are not implemented.",
+    "recommended_next_step": "Add Shopping campaign/product CPC trend checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-007-shopping-no-best-seller-segmentation",
+    "issue_name": "Shopping campaigns not segmented by performance tier",
+    "audit_area": "campaign_structure",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Shopping product tier segmentation is not implemented.",
+    "recommended_next_step": "Add Shopping product group/feed performance module.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-008-no-ad-schedule-bid-adjustments",
+    "issue_name": "Missing hour-of-day bid adjustments on high-CPA windows",
+    "audit_area": "bidding_strategy",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Hour-of-day performance and ad schedule modifiers are not implemented.",
+    "recommended_next_step": "Add ad schedule performance and bid-adjustment checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-009-brand-protection-overspend",
+    "issue_name": "Brand Protection campaign with extremely high ROAS but rising spend",
+    "audit_area": "account_structure",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "QUERY_006",
+      "QUERY_007"
+    ],
+    "coverage_notes": "Brand query routing can be audited when brand terms are configured, but brand-defense spend inflation and Auction Insights are not implemented.",
+    "recommended_next_step": "Add brand campaign spend trend and auction competitor checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-010-pmax-paused-while-shopping-runs",
+    "issue_name": "PMax paused while Shopping is live\u2014losing automated reach",
+    "audit_area": "campaign_structure",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "STRUCT_006",
+      "PMAX_001"
+    ],
+    "coverage_notes": "Active PMax campaigns are audited, but paused-history logic and Shopping-vs-PMax state comparison are not implemented.",
+    "recommended_next_step": "Add campaign status/change-history checks for PMax and Shopping coexistence.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-011-device-bid-adjustments-missing-tablet",
+    "issue_name": "Tablet traffic over-priced with no device bid adjustment",
+    "audit_area": "bidding_strategy",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Device performance and device bid adjustments are not implemented.",
+    "recommended_next_step": "Add device segmented performance checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-012-desktop-aov-underexploited",
+    "issue_name": "Desktop shows higher AOV but no positive bid adjustment",
+    "audit_area": "bidding_strategy",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Device AOV and bid adjustment opportunity detection are not implemented.",
+    "recommended_next_step": "Add device AOV and value-per-conversion analysis.",
+    "implementation_priority": "low"
+  },
+  {
+    "pattern_id": "ga-013-geo-zero-order-cities",
+    "issue_name": "Cities with meaningful spend and zero orders over 24 months",
+    "audit_area": "geo_targeting",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Geo performance by city is not implemented.",
+    "recommended_next_step": "Add geographic performance module with zero-conversion spend checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-014-geo-high-cpa-low-roas-cities",
+    "issue_name": "Cities with consistently high CPA / low ROAS need bid suppression",
+    "audit_area": "geo_targeting",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Geo CPA/ROAS suppression opportunities are not implemented.",
+    "recommended_next_step": "Add city/region CPA and ROAS checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-015-wasteful-search-terms",
+    "issue_name": "High-spend search terms with zero conversions",
+    "audit_area": "negative_keywords",
+    "coverage_status": "implemented",
+    "related_check_ids": [
+      "QUERY_001",
+      "QUERY_002"
+    ],
+    "coverage_notes": "High-spend and high-click search terms with zero conversions are covered in the search term audit layer.",
+    "recommended_next_step": "Tune thresholds by account target CPA where available.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-016-zombie-products-in-shopping",
+    "issue_name": "Shopping SKUs with material spend and zero conversions",
+    "audit_area": "shopping_feed",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Product/SKU-level Shopping performance is not implemented.",
+    "recommended_next_step": "Add product performance checks for spend with zero conversions.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-017-catch-all-shopping-low-roas",
+    "issue_name": "Catch-all Shopping campaign with low ROAS needs restructure or migration",
+    "audit_area": "campaign_structure",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Catch-all Shopping structure and product/search term overlap are not implemented.",
+    "recommended_next_step": "Add Shopping campaign structure and product group checks.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-018-negative-keyword-list-not-scaling",
+    "issue_name": "Negative keyword list not scaled with campaign growth",
+    "audit_area": "negative_keywords",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "QUERY_001",
+      "QUERY_002",
+      "QUERY_004",
+      "QUERY_005"
+    ],
+    "coverage_notes": "Search term waste and intent/comparison queries are detected, but negative keyword list size/cadence is not audited.",
+    "recommended_next_step": "Add negative keyword inventory and freshness checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-019-time-of-day-not-analysed",
+    "issue_name": "Time-of-day performance not analysed per campaign / per timezone",
+    "audit_area": "ad_schedule",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Time-of-day and timezone analysis is not implemented.",
+    "recommended_next_step": "Add hourly performance and ad schedule checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-020-revert-to-prior-year-mix",
+    "issue_name": "Revert to last year's higher-intent mix when YoY ROAS drops",
+    "audit_area": "account_structure",
+    "coverage_status": "needs_review",
+    "related_check_ids": [
+      "PERF_002",
+      "PERF_004"
+    ],
+    "coverage_notes": "Performance degradation checks exist, but strategic prior-year mix restoration requires historical campaign-type comparison not implemented.",
+    "recommended_next_step": "Add YoY campaign-type mix and historical campaign recovery analysis.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-021-remarketing-presence-low",
+    "issue_name": "Insufficient remarketing presence in paid mix",
+    "audit_area": "audiences",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Remarketing audience presence and paid mix share are not implemented.",
+    "recommended_next_step": "Add audience and remarketing coverage checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-022-pmax-without-audience-signals",
+    "issue_name": "PMax running without customer-list or abandoned-cart audience signals",
+    "audit_area": "audiences",
+    "coverage_status": "planned",
+    "related_check_ids": [
+      "PMAX_001"
+    ],
+    "coverage_notes": "PMax campaigns are flagged for deeper review, but audience signal quality is not queried.",
+    "recommended_next_step": "Add PMax audience signal checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-023-attribution-undervalues-paid-search",
+    "issue_name": "Last-click attribution undervalues paid search vs. data-driven / paid-channels view",
+    "audit_area": "attribution",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "TRACK_007"
+    ],
+    "coverage_notes": "Legacy attribution model detection exists at conversion action level, but paid-search undervaluation comparisons are not implemented.",
+    "recommended_next_step": "Add attribution model and channel comparison reporting.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-024-revive-prior-year-search-campaigns",
+    "issue_name": "Revive previously high-performing Search campaigns that were turned off",
+    "audit_area": "campaign_structure",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Paused historical campaign recovery is not implemented.",
+    "recommended_next_step": "Add historical campaign status/performance comparison.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-025-pmax-no-negative-keywords",
+    "issue_name": "PMax without account-level negative keywords cannibalises brand and generic queries",
+    "audit_area": "negative_keywords",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "QUERY_006",
+      "QUERY_007",
+      "PMAX_001"
+    ],
+    "coverage_notes": "PMax and query routing issues are partially covered, but PMax negative keyword configuration is not audited.",
+    "recommended_next_step": "Add account/campaign negative keyword checks for PMax.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-026-purchase-tracking-cart-data-mismatch",
+    "issue_name": "GA4 purchase events missing cart data / item_id mismatch with Merchant Center",
+    "audit_area": "conversion_tracking",
+    "coverage_status": "planned",
+    "related_check_ids": [
+      "TRACK_004"
+    ],
+    "coverage_notes": "Missing value signals are covered, but GA4 cart item_id and Merchant Center data consistency are not implemented.",
+    "recommended_next_step": "Add GA4/Merchant Center integration validation.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-027-static-transaction-value",
+    "issue_name": "Transactions tracked with static $1 value instead of dynamic revenue",
+    "audit_area": "conversion_tracking",
+    "coverage_status": "implemented",
+    "related_check_ids": [
+      "TRACK_005"
+    ],
+    "coverage_notes": "Always-use-default-value conversion actions are detected.",
+    "recommended_next_step": "Add special handling for ecommerce purchase actions with static values.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-028-cart-value-exceeds-purchase-value",
+    "issue_name": "Cart conversion value inflated above purchase value",
+    "audit_area": "conversion_tracking",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Cart vs purchase conversion value comparison is not implemented.",
+    "recommended_next_step": "Add conversion action value consistency checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-029-engagement-events-as-primary-conversions",
+    "issue_name": "Engagement events (clicks, scrolls, pageviews) configured as primary conversions",
+    "audit_area": "conversion_tracking",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "TRACK_002",
+      "TRACK_003"
+    ],
+    "coverage_notes": "Multiple and unclear primary conversion actions are detected, but soft-event classification is not explicit enough.",
+    "recommended_next_step": "Add soft conversion category/name classifier.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-030-account-level-conversion-settings-only",
+    "issue_name": "All campaigns use account-level conversion settings \u2014 no per-campaign scoping",
+    "audit_area": "conversion_tracking",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Campaign-level conversion goal settings are not audited.",
+    "recommended_next_step": "Add campaign conversion goal setting checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-031-conversions-need-attention",
+    "issue_name": "Conversions stuck in 'Need attention' status",
+    "audit_area": "conversion_tracking",
+    "coverage_status": "planned",
+    "related_check_ids": [
+      "TRACK_006"
+    ],
+    "coverage_notes": "Inactive/removed conversion actions are detected, but Need Attention status is not explicitly classified.",
+    "recommended_next_step": "Add conversion action diagnostics/status-detail checks.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-032-ga4-not-linked-to-google-ads",
+    "issue_name": "Google Ads not linked to Google Analytics 4",
+    "audit_area": "measurement",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "GA4 link status is not audited.",
+    "recommended_next_step": "Add linked account/integration checks.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-033-micro-conversions-not-tracked",
+    "issue_name": "Mid-funnel micro-conversions not tracked",
+    "audit_area": "conversion_tracking",
+    "coverage_status": "needs_review",
+    "related_check_ids": [
+      "TRACK_001",
+      "TRACK_003"
+    ],
+    "coverage_notes": "Primary conversion presence is audited, but absence of useful secondary micro-conversions is context-specific and not implemented.",
+    "recommended_next_step": "Define desired micro-conversion taxonomy before automation.",
+    "implementation_priority": "low"
+  },
+  {
+    "pattern_id": "ga-034-duplicate-purchase-conversions-across-sources",
+    "issue_name": "Multiple purchase conversions from different sources counted in parallel",
+    "audit_area": "conversion_tracking",
+    "coverage_status": "planned",
+    "related_check_ids": [
+      "TRACK_002"
+    ],
+    "coverage_notes": "Many primary conversions are flagged, but duplicate purchase-source detection is not implemented.",
+    "recommended_next_step": "Add duplicate conversion action name/category/source checks.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-035-crm-offline-conversion-import-missing",
+    "issue_name": "CRM offline conversion import missing for lead-gen accounts",
+    "audit_area": "measurement",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Offline conversion import presence is not audited.",
+    "recommended_next_step": "Add lead-gen CRM/offline conversion import checks.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-036-user-data-collection-not-enabled",
+    "issue_name": "User data / Enhanced Conversions not enabled \u2014 remarketing audiences not building",
+    "audit_area": "audiences",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Enhanced conversions/user data collection status is not audited.",
+    "recommended_next_step": "Add enhanced conversions and user data collection checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-037-advertiser-verification-incomplete",
+    "issue_name": "Advertiser or industry verification incomplete",
+    "audit_area": "other",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Advertiser verification status is not audited.",
+    "recommended_next_step": "Add account verification/policy status checks if supported by API.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-038-pmax-multiple-primary-goals",
+    "issue_name": "PMax optimised against multiple primary conversion goals",
+    "audit_area": "performance_max",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "TRACK_002",
+      "STRUCT_004"
+    ],
+    "coverage_notes": "Multiple primary conversion actions and Maximize Conversions are flagged, but PMax-specific goal mapping is not implemented.",
+    "recommended_next_step": "Add campaign-specific conversion goal mapping for PMax.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-039-micro-conversions-still-primary-after-volume",
+    "issue_name": "Micro-conversions (Add to Cart, Begin Checkout) kept as Primary after the account has meaningful purchase volume",
+    "audit_area": "performance_max",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "TRACK_002",
+      "TRACK_003"
+    ],
+    "coverage_notes": "Soft or excessive primary conversion risk is partially covered, but purchase-volume-dependent logic is not implemented.",
+    "recommended_next_step": "Add conversion-volume-aware primary goal checks.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-040-pmax-search-themes-not-configured",
+    "issue_name": "PMax search themes not configured",
+    "audit_area": "performance_max",
+    "coverage_status": "planned",
+    "related_check_ids": [
+      "PMAX_001"
+    ],
+    "coverage_notes": "PMax deep review exists, but search theme configuration is not queried.",
+    "recommended_next_step": "Add PMax search themes query/checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-041-pmax-weak-creative-assets",
+    "issue_name": "PMax ad assets are weak (low variety in headlines, descriptions, images)",
+    "audit_area": "creatives_assets",
+    "coverage_status": "planned",
+    "related_check_ids": [
+      "PMAX_001"
+    ],
+    "coverage_notes": "PMax campaigns are flagged for review, but creative asset coverage/quality is not implemented.",
+    "recommended_next_step": "Add asset coverage and asset performance checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-042-pmax-multi-brand-no-segmentation",
+    "issue_name": "Single PMax mixes multiple brands without separation",
+    "audit_area": "performance_max",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "PMAX_006",
+      "PMAX_007"
+    ],
+    "coverage_notes": "PMax asset group segmentation/naming is checked, but multi-brand detection requires brand taxonomy.",
+    "recommended_next_step": "Add brand/product taxonomy support for PMax segmentation checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-043-pmax-used-as-remarketing",
+    "issue_name": "PMax used as a 'remarketing-only' campaign \u2014 incorrect targeting model",
+    "audit_area": "performance_max",
+    "coverage_status": "planned",
+    "related_check_ids": [
+      "PMAX_001"
+    ],
+    "coverage_notes": "PMax review is triggered, but remarketing-only misuse requires audience signal/asset group intent data not implemented.",
+    "recommended_next_step": "Add PMax audience signal and campaign objective checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-044-pmax-asset-group-cpa-disparity",
+    "issue_name": "Asset groups within one PMax show large CPA disparity",
+    "audit_area": "performance_max",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "PMAX_002",
+      "PMAX_003"
+    ],
+    "coverage_notes": "Poor asset group performance is covered, but relative CPA disparity across asset groups is not explicitly computed.",
+    "recommended_next_step": "Add intra-campaign asset group CPA disparity check.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-045-pmax-generic-audience-signal",
+    "issue_name": "Generic 'Smart List' or default audience used as PMax signal",
+    "audit_area": "audiences",
+    "coverage_status": "planned",
+    "related_check_ids": [
+      "PMAX_001"
+    ],
+    "coverage_notes": "PMax review is triggered, but audience signal naming/quality is not queried.",
+    "recommended_next_step": "Add audience signal checks for generic/default lists.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-046-ai-max-on-brand-campaign",
+    "issue_name": "AI Max enabled in a Brand campaign matches non-brand queries",
+    "audit_area": "keywords",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "QUERY_007"
+    ],
+    "coverage_notes": "Non-brand query leakage in brand campaigns is detected, but AI Max setting itself is not audited.",
+    "recommended_next_step": "Add AI Max campaign setting detection when API support is available.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-047-only-exact-match-keywords",
+    "issue_name": "Search campaign uses only Exact match keywords",
+    "audit_area": "keywords",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Keyword inventory and match type composition are not implemented.",
+    "recommended_next_step": "Add keyword match-type distribution checks.",
+    "implementation_priority": "low"
+  },
+  {
+    "pattern_id": "ga-048-only-broad-match-keywords",
+    "issue_name": "Search campaign uses only Broad match keywords",
+    "audit_area": "keywords",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "QUERY_001",
+      "QUERY_002",
+      "QUERY_004"
+    ],
+    "coverage_notes": "Broad-match leakage symptoms are detected via search terms, but keyword match-type composition is not audited.",
+    "recommended_next_step": "Add keyword match-type distribution checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-049-single-ad-per-ad-group",
+    "issue_name": "Single ad per ad group \u2014 no creative A/B",
+    "audit_area": "creatives_assets",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Ad count per ad group is not audited.",
+    "recommended_next_step": "Add ad group creative inventory checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-050-match-type-duplicate-ad-groups",
+    "issue_name": "Ad groups duplicated by match type for the same keyword",
+    "audit_area": "campaign_structure",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Duplicate ad groups by match type are not audited.",
+    "recommended_next_step": "Add keyword/ad group structure duplicate detection.",
+    "implementation_priority": "low"
+  },
+  {
+    "pattern_id": "ga-051-smart-campaigns-in-perf-account",
+    "issue_name": "Smart Campaigns used in a performance-focused account",
+    "audit_area": "campaign_structure",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Campaign type audit does not currently flag Smart Campaigns.",
+    "recommended_next_step": "Add campaign type inventory checks for Smart Campaigns.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-052-undersized-semantic-core",
+    "issue_name": "Semantic core too small \u2014 keyword list under-researched",
+    "audit_area": "keywords",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Keyword breadth/semantic coverage is not implemented.",
+    "recommended_next_step": "Add keyword inventory size and theme coverage checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-053-ad-strength-below-excellent",
+    "issue_name": "Ad strength below 'Excellent' caps Quality Score",
+    "audit_area": "creatives_assets",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Ad strength is not audited.",
+    "recommended_next_step": "Add responsive search ad/ad strength checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-054-insufficient-sitelinks-snippets",
+    "issue_name": "Fewer than 4 sitelinks or no structured snippets configured",
+    "audit_area": "creatives_assets",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Extension/asset coverage is not audited.",
+    "recommended_next_step": "Add sitelink, callout, snippet, image, and price asset checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-055-bids-too-low-for-top-3",
+    "issue_name": "Bids too low \u2014 important keywords consistently below top-3 position",
+    "audit_area": "bidding_strategy",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Top impression position and bid adequacy checks are not implemented.",
+    "recommended_next_step": "Add impression share/top-of-page and bid strategy diagnostics.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-056-search-and-display-mixed",
+    "issue_name": "Search and Display traffic combined in a single campaign",
+    "audit_area": "campaign_structure",
+    "coverage_status": "implemented",
+    "related_check_ids": [
+      "STRUCT_002"
+    ],
+    "coverage_notes": "Search campaigns with Display/content network enabled are detected.",
+    "recommended_next_step": "No immediate action unless more granular network performance is needed.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-057-dki-opportunity",
+    "issue_name": "Dynamic Keyword Insertion (DKI) opportunity for ad relevance",
+    "audit_area": "creatives_assets",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Dynamic Keyword Insertion opportunity detection is not implemented.",
+    "recommended_next_step": "Add ad relevance and keyword insertion opportunity checks.",
+    "implementation_priority": "low"
+  },
+  {
+    "pattern_id": "ga-058-multiple-countries-in-one-campaign",
+    "issue_name": "Multiple countries combined into a single campaign",
+    "audit_area": "geo_targeting",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Country-level targeting structure is not audited.",
+    "recommended_next_step": "Add geo targeting setting checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-059-top-markets-need-dedicated-campaigns",
+    "issue_name": "Top markets need their own dedicated campaigns",
+    "audit_area": "geo_targeting",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Top market segmentation is not audited.",
+    "recommended_next_step": "Add location performance and campaign segmentation checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-060-geo-targeting-leaks-outside-country",
+    "issue_name": "Ads serving outside the intended country",
+    "audit_area": "geo_targeting",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "User/served location leakage is not audited.",
+    "recommended_next_step": "Add user location vs target location checks.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-061-over-granular-geo-targeting",
+    "issue_name": "Over-granular location targeting on a small budget",
+    "audit_area": "geo_targeting",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Over-granular geo targeting relative to budget is not audited.",
+    "recommended_next_step": "Add target-location count vs budget checks.",
+    "implementation_priority": "low"
+  },
+  {
+    "pattern_id": "ga-062-no-age-bid-adjustment",
+    "issue_name": "Conversions concentrated in specific age bands \u2014 no age bid adjustments",
+    "audit_area": "bidding_strategy",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Age demographic performance and bid adjustments are not audited.",
+    "recommended_next_step": "Add age demographic performance checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-063-language-targeting-too-narrow",
+    "issue_name": "Language targeting too narrow for the market",
+    "audit_area": "campaign_structure",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Language targeting settings are not audited.",
+    "recommended_next_step": "Add campaign language setting checks.",
+    "implementation_priority": "low"
+  },
+  {
+    "pattern_id": "ga-064-single-campaign-budget-concentration",
+    "issue_name": "Whole account budget concentrated in a single campaign at launch",
+    "audit_area": "account_structure",
+    "coverage_status": "implemented",
+    "related_check_ids": [
+      "PERF_007"
+    ],
+    "coverage_notes": "Campaign spend concentration is detected.",
+    "recommended_next_step": "Consider launch-stage-specific thresholds later.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-065-budget-too-low-for-niche",
+    "issue_name": "Budget too low for Smart bidding to learn in the niche",
+    "audit_area": "budget_allocation",
+    "coverage_status": "needs_review",
+    "related_check_ids": [],
+    "coverage_notes": "Learning budget adequacy requires target CPA, niche context, and conversion volume thresholds not implemented.",
+    "recommended_next_step": "Define budget sufficiency rules using target CPA and expected conversion volume.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-066-brand-search-on-roas-strategy",
+    "issue_name": "Brand Search using Target ROAS / Max Conv Value instead of Manual CPC",
+    "audit_area": "bidding_strategy",
+    "coverage_status": "planned",
+    "related_check_ids": [
+      "STRUCT_004"
+    ],
+    "coverage_notes": "Value/volume bidding guardrails exist generally, but brand Search bid strategy classification is not implemented.",
+    "recommended_next_step": "Add brand-campaign bid strategy checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-067-max-conv-with-low-conversion-volume",
+    "issue_name": "Maximize Conversions strategy on campaigns with <20 conversions/30 days",
+    "audit_area": "bidding_strategy",
+    "coverage_status": "planned",
+    "related_check_ids": [
+      "STRUCT_004"
+    ],
+    "coverage_notes": "Maximize Conversions is flagged when value is present, but low-volume suitability is not checked.",
+    "recommended_next_step": "Add bid strategy suitability checks using conversion volume.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-068-smart-bidding-at-launch-no-history",
+    "issue_name": "Smart bidding (Max Conversions / tROAS / tCPA) at launch without historical data",
+    "audit_area": "bidding_strategy",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Launch history and smart bidding suitability are not audited.",
+    "recommended_next_step": "Add new-campaign age/history checks for smart bidding.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-069-tcpa-throttling-delivery",
+    "issue_name": "tCPA target too tight, throttling impression delivery",
+    "audit_area": "bidding_strategy",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "tCPA target tightness and delivery throttling are not audited.",
+    "recommended_next_step": "Add bid strategy target and impression delivery diagnostics.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-070-search-only-no-campaign-diversification",
+    "issue_name": "Account runs only Search \u2014 no PMax, DSA, Demand Gen, or remarketing",
+    "audit_area": "account_structure",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Account channel diversification is not audited.",
+    "recommended_next_step": "Add campaign type portfolio coverage checks.",
+    "implementation_priority": "low"
+  },
+  {
+    "pattern_id": "ga-071-stale-non-seasonal-ad-copy",
+    "issue_name": "Ad copy is stale \u2014 no seasonal refresh routine",
+    "audit_area": "creatives_assets",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Ad copy age/seasonality is not audited.",
+    "recommended_next_step": "Add ad creative freshness checks.",
+    "implementation_priority": "low"
+  },
+  {
+    "pattern_id": "ga-072-disapproved-extension-or-logo",
+    "issue_name": "Disapproved ad extension or logo asset",
+    "audit_area": "other",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Asset approval/disapproval status is not audited.",
+    "recommended_next_step": "Add policy approval checks for assets/extensions.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-073-final-url-recommendations-ignored",
+    "issue_name": "Final URL doesn't follow system recommendations / landing-page quality flagged",
+    "audit_area": "landing_pages",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Landing page quality/recommendation checks are not implemented.",
+    "recommended_next_step": "Add landing page/final URL diagnostics.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-074-lowercase-ad-headlines",
+    "issue_name": "Ad headlines start with a lowercase letter",
+    "audit_area": "creatives_assets",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Ad headline formatting checks are not implemented.",
+    "recommended_next_step": "Add ad text lint checks.",
+    "implementation_priority": "low"
+  },
+  {
+    "pattern_id": "ga-075-missing-image-price-callout-extensions",
+    "issue_name": "Image, price, and callout extensions missing",
+    "audit_area": "creatives_assets",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Asset extension coverage is not audited.",
+    "recommended_next_step": "Add image, price, and callout asset coverage checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-076-incomplete-app-placement-exclusions",
+    "issue_name": "App placement exclusion list incomplete",
+    "audit_area": "campaign_structure",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Placement exclusion list coverage is not audited.",
+    "recommended_next_step": "Add placement exclusion checks.",
+    "implementation_priority": "low"
+  },
+  {
+    "pattern_id": "ga-077-self-referral-not-excluded",
+    "issue_name": "Own domain not excluded as referral source in GA4/UA",
+    "audit_area": "measurement",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "GA4 referral exclusion settings are not audited.",
+    "recommended_next_step": "Add analytics property/referral configuration checks if data source is available.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-078-call-tracking-not-enabled",
+    "issue_name": "Call tracking not enabled for a phone-driven business",
+    "audit_area": "conversion_tracking",
+    "coverage_status": "partially_implemented",
+    "related_check_ids": [
+      "TRACK_001",
+      "TRACK_003"
+    ],
+    "coverage_notes": "Conversion action presence is audited, but phone-driven business context and call tracking requirement are not explicit.",
+    "recommended_next_step": "Add business-type-aware call conversion checks.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-079-lead-form-asset-missing",
+    "issue_name": "Lead Form Asset missing on a Lead-goal campaign",
+    "audit_area": "creatives_assets",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Lead form asset coverage is not audited.",
+    "recommended_next_step": "Add lead form asset checks for lead-goal campaigns.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-080-product-feed-not-segmented-by-gender",
+    "issue_name": "Product feed not segmented by gender / collection \u2014 wrong items served",
+    "audit_area": "shopping_feed",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Feed segmentation by gender/collection is not audited.",
+    "recommended_next_step": "Add Merchant Center/feed attribute segmentation checks.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-081-merchant-center-disapproved-products",
+    "issue_name": "Merchant Center has disapproved products (missing price, image, or other required attributes)",
+    "audit_area": "shopping_feed",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Merchant Center product approval status is not audited.",
+    "recommended_next_step": "Add Merchant Center disapproval checks.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-082-pmax-unknown-gender-excluded",
+    "issue_name": "PMax audience signal excludes 'Unknown' gender or age",
+    "audit_area": "audiences",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "PMax audience exclusions/demographic signals are not audited.",
+    "recommended_next_step": "Add PMax audience/demographic signal checks.",
+    "implementation_priority": "low"
+  },
+  {
+    "pattern_id": "ga-083-poor-asset-performance-not-pruned",
+    "issue_name": "Underperforming assets (sitelinks/snippets/headlines) not paused",
+    "audit_area": "creatives_assets",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Asset-level performance pruning is not audited.",
+    "recommended_next_step": "Add asset performance checks across ads/extensions/PMax assets.",
+    "implementation_priority": "medium"
+  },
+  {
+    "pattern_id": "ga-084-paused-historical-campaigns-with-better-cpa",
+    "issue_name": "Paused historical campaigns outperformed current active campaigns",
+    "audit_area": "campaign_structure",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Historical paused campaign performance comparison is not implemented.",
+    "recommended_next_step": "Add campaign recovery module comparing paused historical campaigns to active campaigns.",
+    "implementation_priority": "high"
+  },
+  {
+    "pattern_id": "ga-085-suspicious-conversion-ratio",
+    "issue_name": "Suspect conversion: conversions outnumber clicks on a query/asset",
+    "audit_area": "conversion_tracking",
+    "coverage_status": "planned",
+    "related_check_ids": [],
+    "coverage_notes": "Suspicious conversion ratios are not audited.",
+    "recommended_next_step": "Add anomaly checks for conversions exceeding clicks by entity.",
+    "implementation_priority": "high"
+  }
+]
