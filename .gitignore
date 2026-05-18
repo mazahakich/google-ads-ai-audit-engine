@@ -6,3 +6,4 @@ audit_google_ads.py
 __pycache__/
 *.pyc
 reports/
+.DS_Store
