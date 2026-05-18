@@ -11,7 +11,13 @@ from .checks import (
     generate_segment_findings,
     load_check_catalog,
 )
-from .claude_reporter import ClaudeReporterError, generate_markdown_report, write_report
+from .claude_reporter import (
+    ClaudeReporterError,
+    build_findings_payload,
+    generate_markdown_report,
+    write_findings,
+    write_report,
+)
 from .config import ConfigError, load_settings
 from .conversions import ConversionActionQueryError, fetch_conversion_actions
 from .google_ads_client import GoogleAdsClientError, build_google_ads_client
@@ -90,12 +96,21 @@ def run() -> int:
             )
         )
 
-        print("\nAI FINDINGS JSON\n")
-        print(json.dumps(findings, indent=2))
+        findings_payload = build_findings_payload(findings)
+        findings_path = write_findings(findings_payload, settings.reports_dir)
+        claude_findings = findings_payload["claude_findings"]
 
-        report = generate_markdown_report(settings.anthropic_api_key, findings)
-        path = write_report(report, settings.reports_dir)
-        print(f"\nAudit report saved to: {path}")
+        print(
+            "\nAI findings generated: "
+            f"{findings_payload['summary']['raw_count']} raw, "
+            f"{findings_payload['summary']['processed_count']} deduped, "
+            f"{findings_payload['summary']['claude_payload_count']} sent to Claude."
+        )
+        print(f"Findings JSON saved to: {findings_path}")
+
+        report = generate_markdown_report(settings.anthropic_api_key, claude_findings)
+        report_path = write_report(report, settings.reports_dir)
+        print(f"\nAudit report saved to: {report_path}")
         return 0
 
     except ConfigError as exc:
