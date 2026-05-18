@@ -268,5 +268,68 @@
     "condition_description": "Search term generated spend and conversion value but ROAS is materially below the acceptable threshold.",
     "why_it_matters": "Some converting queries may still be unprofitable if value is too low relative to cost.",
     "recommendation": "Review query profitability, bid strategy, match type, landing page, and potential exclusions."
+  },
+  {
+    "check_id": "PMAX_001",
+    "category": "pmax",
+    "name": "PMax campaign requires asset group review",
+    "severity": "low",
+    "condition_description": "Performance Max campaign is active and should be reviewed beyond campaign-level metrics.",
+    "why_it_matters": "PMax campaign-level metrics can hide inefficient asset groups, product groups, audiences, and creative assets.",
+    "recommendation": "Review asset groups, listing groups, audience signals, product/category splits, search categories, and creative asset coverage."
+  },
+  {
+    "check_id": "PMAX_002",
+    "category": "pmax",
+    "name": "PMax asset group spent without conversions",
+    "severity": "high",
+    "condition_description": "Asset group spent a meaningful amount but generated no conversions.",
+    "why_it_matters": "Budget may be concentrated in asset groups that are not producing business outcomes.",
+    "recommendation": "Review asset group theme, audience signal, landing page, product/category mapping, and creative relevance."
+  },
+  {
+    "check_id": "PMAX_003",
+    "category": "pmax",
+    "name": "PMax asset group has low ROAS",
+    "severity": "high",
+    "condition_description": "Asset group generated spend and conversion value but ROAS is materially below the acceptable threshold.",
+    "why_it_matters": "Some asset groups may convert but still be unprofitable.",
+    "recommendation": "Review product/category mix, asset quality, landing page relevance, and whether the asset group should be restructured."
+  },
+  {
+    "check_id": "PMAX_004",
+    "category": "pmax",
+    "name": "PMax spend concentration in one asset group",
+    "severity": "medium",
+    "condition_description": "One asset group receives a disproportionately high share of PMax campaign spend.",
+    "why_it_matters": "Overconcentration can reduce learning diversity and hide inefficient segmentation.",
+    "recommendation": "Review whether spend concentration matches business priority and actual profitability."
+  },
+  {
+    "check_id": "PMAX_005",
+    "category": "pmax",
+    "name": "PMax asset group active but no impressions",
+    "severity": "medium",
+    "condition_description": "Asset group is enabled but received no impressions.",
+    "why_it_matters": "The asset group may be blocked by setup, policy, targeting, assets, or campaign learning behavior.",
+    "recommendation": "Review asset group status, assets, landing page, policy approvals, product eligibility, and campaign budget."
+  },
+  {
+    "check_id": "PMAX_006",
+    "category": "pmax",
+    "name": "PMax campaign has only one asset group",
+    "severity": "medium",
+    "condition_description": "PMax campaign appears to have only one asset group.",
+    "why_it_matters": "A single asset group can limit segmentation and make it harder to control product/category/audience intent.",
+    "recommendation": "Consider splitting asset groups by product category, service line, funnel intent, margin group, or audience theme."
+  },
+  {
+    "check_id": "PMAX_007",
+    "category": "pmax",
+    "name": "PMax asset group naming is unclear",
+    "severity": "low",
+    "condition_description": "Asset group name does not clearly indicate product category, service, audience, market, or intent.",
+    "why_it_matters": "Weak asset group naming makes optimization, reporting, and creative/product mapping harder.",
+    "recommendation": "Improve naming conventions so each asset group clearly reflects its purpose."
   }
 ]

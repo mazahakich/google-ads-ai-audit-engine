@@ -29,7 +29,7 @@ Client context:
 Findings JSON:
 {json.dumps(findings, indent=2)}
 
-Findings may be campaign-level, account-level, conversion-action-level, or search-term-level.
+Findings may be campaign-level, account-level, conversion-action-level, search-term-level, or PMax-level.
 Use the scope, entity type, campaign setup, metrics, and context fields when present.
 """.strip()
 

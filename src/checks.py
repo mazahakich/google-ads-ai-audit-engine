@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .conversions import ConversionAction
 from .metrics import CampaignMetrics
+from .pmax import PMaxAssetGroupMetrics, pmax_campaigns_from_metrics
 from .search_terms import SearchTermMetrics
 
 PERF_001_COST_INCREASE_THRESHOLD = 20
@@ -54,6 +55,38 @@ SEARCH_TERM_LOW_CTR_THRESHOLD = 0.01
 SEARCH_TERM_POOR_ROAS_COST_THRESHOLD = 30
 SEARCH_TERM_POOR_ROAS_THRESHOLD = 1.0
 SEARCH_TERM_FINDING_LIMIT = 25
+PMAX_SPEND_WITHOUT_CONVERSIONS_THRESHOLD = 50
+PMAX_LOW_ROAS_COST_THRESHOLD = 50
+PMAX_LOW_ROAS_THRESHOLD = 1.0
+PMAX_SPEND_CONCENTRATION_THRESHOLD = 0.70
+PMAX_FINDING_LIMIT = 20
+WEAK_PMAX_ASSET_GROUP_NAMES = (
+    "asset group",
+    "assetgroup",
+    "new asset group",
+    "default",
+    "general",
+    "test",
+    "pmax",
+    "all products",
+)
+PMAX_ASSET_GROUP_STRUCTURE_INDICATORS = (
+    "product",
+    "category",
+    "service",
+    "audience",
+    "market",
+    "intent",
+    "brand",
+    "nonbrand",
+    "non-brand",
+    "local",
+    "geo",
+    "shopping",
+    "remarketing",
+    "retargeting",
+    "prospecting",
+)
 INFORMATIONAL_QUERY_TERMS = (
     "how",
     "what",
@@ -213,6 +246,67 @@ def limit_search_term_findings(findings: list[dict]) -> list[dict]:
             -finding.get("context", {}).get("cost", 0),
         ),
     )[:SEARCH_TERM_FINDING_LIMIT]
+
+
+def pmax_asset_group_context(asset_group: PMaxAssetGroupMetrics, spend_share: float = 0) -> dict:
+    return {
+        "campaign_id": asset_group.campaign_id,
+        "campaign_status": asset_group.campaign_status,
+        "asset_group_id": asset_group.asset_group_id,
+        "asset_group_name": asset_group.asset_group_name,
+        "asset_group_status": asset_group.asset_group_status,
+        "cost": round(asset_group.cost, 2),
+        "clicks": asset_group.clicks,
+        "impressions": asset_group.impressions,
+        "conversions": round(asset_group.conversions, 2),
+        "conversion_value": round(asset_group.conversion_value, 2),
+        "ctr": round(asset_group.ctr, 4),
+        "average_cpc": round(asset_group.average_cpc, 2),
+        "cpa": round(asset_group.cpa, 2),
+        "roas": round(asset_group.roas, 2),
+        "spend_share": round(spend_share, 4),
+    }
+
+
+def pmax_campaign_context(campaign: CampaignMetrics, enabled_asset_group_count: int | None = None) -> dict:
+    context = {
+        "campaign_id": campaign.campaign_id,
+        "campaign_status": campaign.campaign_status or campaign.status,
+        "advertising_channel_type": campaign.advertising_channel_type,
+        "cost": round(campaign.last7_cost, 2),
+        "conversions": round(campaign.last7_conversions, 2),
+        "conversion_value": round(campaign.last7_conversion_value, 2),
+        "roas": round(campaign.last7_roas, 2),
+    }
+    if enabled_asset_group_count is not None:
+        context["enabled_asset_group_count"] = enabled_asset_group_count
+    return context
+
+
+def pmax_asset_group_is_enabled(asset_group: PMaxAssetGroupMetrics) -> bool:
+    return normalize_enum(asset_group.asset_group_status) == "ENABLED"
+
+
+def pmax_asset_group_name_is_unclear(asset_group_name: str) -> bool:
+    name = normalized_text(asset_group_name).strip()
+    if len(name) < 4:
+        return True
+    if name in WEAK_PMAX_ASSET_GROUP_NAMES:
+        return True
+    if any(weak_name == name for weak_name in WEAK_PMAX_ASSET_GROUP_NAMES):
+        return True
+
+    return not any(indicator in name for indicator in PMAX_ASSET_GROUP_STRUCTURE_INDICATORS)
+
+
+def limit_pmax_findings(findings: list[dict]) -> list[dict]:
+    return sorted(
+        findings,
+        key=lambda finding: (
+            highest_severity_rank(finding),
+            -finding.get("context", {}).get("cost", 0),
+        ),
+    )[:PMAX_FINDING_LIMIT]
 
 
 def load_check_catalog(path: Path) -> dict[str, dict]:
@@ -449,3 +543,96 @@ def generate_search_term_findings(
             )
 
     return limit_search_term_findings(findings)
+
+
+def generate_pmax_findings(
+    campaign_data: dict[str, CampaignMetrics],
+    asset_groups: list[PMaxAssetGroupMetrics],
+    check_catalog: dict[str, dict],
+) -> list[dict]:
+    findings: list[dict] = []
+    pmax_campaigns = pmax_campaigns_from_metrics(campaign_data)
+    asset_groups_by_campaign: dict[int | str, list[PMaxAssetGroupMetrics]] = {}
+    enabled_pmax_keys = {
+        campaign.campaign_id if campaign.campaign_id is not None else campaign.campaign_name
+        for campaign in pmax_campaigns
+        if campaign_is_enabled(campaign)
+    }
+
+    for asset_group in asset_groups:
+        campaign_key = asset_group.campaign_id if asset_group.campaign_id is not None else asset_group.campaign_name
+        if campaign_key not in enabled_pmax_keys:
+            continue
+        asset_groups_by_campaign.setdefault(campaign_key, []).append(asset_group)
+
+    for campaign in pmax_campaigns:
+        if not campaign_is_enabled(campaign):
+            continue
+
+        campaign_key = campaign.campaign_id if campaign.campaign_id is not None else campaign.campaign_name
+        campaign_asset_groups = asset_groups_by_campaign.get(campaign_key, [])
+        enabled_asset_groups = [
+            asset_group for asset_group in campaign_asset_groups if pmax_asset_group_is_enabled(asset_group)
+        ]
+
+        findings.append(
+            {
+                "scope": "pmax",
+                "entity_type": "campaign",
+                "entity_name": campaign.campaign_name,
+                "campaign": campaign.campaign_name,
+                "triggered_checks": [check_catalog["PMAX_001"]],
+                "checks": [check_catalog["PMAX_001"]],
+                "context": pmax_campaign_context(campaign, len(enabled_asset_groups) if campaign_asset_groups else None),
+            }
+        )
+
+        if len(enabled_asset_groups) == 1:
+            findings.append(
+                {
+                    "scope": "pmax",
+                    "entity_type": "campaign",
+                    "entity_name": campaign.campaign_name,
+                    "campaign": campaign.campaign_name,
+                    "triggered_checks": [check_catalog["PMAX_006"]],
+                    "checks": [check_catalog["PMAX_006"]],
+                    "context": pmax_campaign_context(campaign, len(enabled_asset_groups)),
+                }
+            )
+
+    for campaign_key, campaign_asset_groups in asset_groups_by_campaign.items():
+        total_campaign_cost = sum(asset_group.cost for asset_group in campaign_asset_groups)
+
+        for asset_group in campaign_asset_groups:
+            triggered_checks: list[dict] = []
+            spend_share = asset_group.cost / total_campaign_cost if total_campaign_cost > 0 else 0
+
+            if asset_group.cost > PMAX_SPEND_WITHOUT_CONVERSIONS_THRESHOLD and asset_group.conversions == 0:
+                triggered_checks.append(check_catalog["PMAX_002"])
+            if (
+                asset_group.cost > PMAX_LOW_ROAS_COST_THRESHOLD
+                and asset_group.conversion_value > 0
+                and asset_group.roas < PMAX_LOW_ROAS_THRESHOLD
+            ):
+                triggered_checks.append(check_catalog["PMAX_003"])
+            if total_campaign_cost > 0 and spend_share > PMAX_SPEND_CONCENTRATION_THRESHOLD:
+                triggered_checks.append(check_catalog["PMAX_004"])
+            if pmax_asset_group_is_enabled(asset_group) and asset_group.impressions == 0:
+                triggered_checks.append(check_catalog["PMAX_005"])
+            if pmax_asset_group_name_is_unclear(asset_group.asset_group_name):
+                triggered_checks.append(check_catalog["PMAX_007"])
+
+            if triggered_checks:
+                findings.append(
+                    {
+                        "scope": "pmax",
+                        "entity_type": "asset_group",
+                        "entity_name": asset_group.asset_group_name,
+                        "campaign": asset_group.campaign_name,
+                        "triggered_checks": triggered_checks,
+                        "checks": triggered_checks,
+                        "context": pmax_asset_group_context(asset_group, spend_share),
+                    }
+                )
+
+    return limit_pmax_findings(findings)
