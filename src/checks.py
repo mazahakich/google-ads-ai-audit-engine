@@ -5,6 +5,14 @@ from pathlib import Path
 
 from .metrics import CampaignMetrics
 
+PERF_001_COST_INCREASE_THRESHOLD = 20
+ROAS_DROP_THRESHOLD = 0.30
+ZERO_CONVERSION_SPEND_THRESHOLD = 50
+CPA_INCREASE_THRESHOLD = 0.30
+SPEND_CONCENTRATION_THRESHOLD = 0.60
+STABLE_SPEND_RATIO = 0.90
+CONVERSION_DROP_RATIO = 0.80
+
 
 def load_check_catalog(path: Path) -> dict[str, dict]:
     checks = json.loads(path.read_text(encoding="utf-8"))
@@ -13,25 +21,31 @@ def load_check_catalog(path: Path) -> dict[str, dict]:
 
 def generate_findings(campaign_data: dict[str, CampaignMetrics], check_catalog: dict[str, dict]) -> list[dict]:
     findings: list[dict] = []
+    total_last7_cost = sum(data.last7_cost for data in campaign_data.values())
 
     for campaign, data in campaign_data.items():
-        last_roas = data.last7_value / data.last7_cost if data.last7_cost > 0 else 0
-        prev_roas = data.prev7_value / data.prev7_cost if data.prev7_cost > 0 else 0
-
         cost_change = data.last7_cost - data.prev7_cost
         conv_change = data.last7_conv - data.prev7_conv
-        roas_change = last_roas - prev_roas
+        roas_change = data.last7_roas - data.previous7_roas
 
         triggered_checks: list[dict] = []
 
-        if cost_change > 20:
+        if cost_change > PERF_001_COST_INCREASE_THRESHOLD:
             triggered_checks.append(check_catalog["PERF_001"])
-        if roas_change < -0.2:
+        if data.previous7_roas > 0 and data.last7_roas < data.previous7_roas * (1 - ROAS_DROP_THRESHOLD):
             triggered_checks.append(check_catalog["PERF_002"])
-        if data.last7_cost > 50 and data.last7_conv == 0:
+        if data.last7_cost > ZERO_CONVERSION_SPEND_THRESHOLD and data.last7_conv == 0:
             triggered_checks.append(check_catalog["PERF_003"])
-
-        # Structural checks can be extended here in future without changing the interface.
+        if data.previous7_cpa > 0 and data.last7_cpa > data.previous7_cpa * (1 + CPA_INCREASE_THRESHOLD):
+            triggered_checks.append(check_catalog["PERF_004"])
+        if data.last7_conv > 0 and data.last7_value == 0:
+            triggered_checks.append(check_catalog["PERF_005"])
+        if data.status == "ENABLED" and data.last7_impressions == 0:
+            triggered_checks.append(check_catalog["PERF_006"])
+        if total_last7_cost > 0 and data.last7_cost > total_last7_cost * SPEND_CONCENTRATION_THRESHOLD:
+            triggered_checks.append(check_catalog["PERF_007"])
+        if data.last7_cost >= data.prev7_cost * STABLE_SPEND_RATIO and data.last7_conv < data.prev7_conv * CONVERSION_DROP_RATIO:
+            triggered_checks.append(check_catalog["PERF_008"])
 
         if triggered_checks:
             findings.append(

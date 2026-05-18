@@ -10,21 +10,66 @@
   },
   {
     "check_id": "PERF_002",
+    "name": "ROAS dropped significantly",
     "category": "performance",
-    "name": "ROAS decreased significantly",
     "severity": "high",
-    "condition_description": "ROAS dropped materially compared with the previous period.",
-    "why_it_matters": "Revenue efficiency is declining, which can hurt contribution margin.",
-    "recommendation": "Check campaigns, products, geographies, devices, and search terms responsible for the ROAS decline."
+    "condition_description": "ROAS decreased materially compared with the previous period.",
+    "why_it_matters": "Revenue efficiency is declining, which can reduce contribution margin and make scaling unsafe.",
+    "recommendation": "Identify campaigns, products, audiences, geographies, and queries responsible for the ROAS decline."
   },
   {
     "check_id": "PERF_003",
+    "name": "Spend with zero conversions",
     "category": "performance",
-    "name": "Spend without conversions",
     "severity": "medium",
-    "condition_description": "Campaign spent a meaningful amount but generated zero conversions.",
-    "why_it_matters": "Budget may be going to low-intent traffic, weak placements, wrong search terms, or tracking issues.",
-    "recommendation": "Review traffic quality, query relevance, conversion tracking, landing page performance, and exclusions."
+    "condition_description": "Campaign spent a meaningful amount during the latest period but generated zero conversions.",
+    "why_it_matters": "Budget may be going to low-intent traffic, weak placements, poor queries, or there may be a tracking issue.",
+    "recommendation": "Review traffic quality, search terms, placements, landing pages, conversion tracking, and exclusions."
+  },
+  {
+    "check_id": "PERF_004",
+    "name": "CPA increased significantly",
+    "category": "performance",
+    "severity": "high",
+    "condition_description": "Cost per conversion increased materially compared with the previous period.",
+    "why_it_matters": "Acquisition efficiency is deteriorating and can reduce profitability even if conversion volume is stable.",
+    "recommendation": "Check bidding changes, CPC increases, query quality, audience shifts, landing page conversion rate, and budget allocation."
+  },
+  {
+    "check_id": "PERF_005",
+    "name": "Conversion value missing or flat",
+    "category": "tracking",
+    "severity": "high",
+    "condition_description": "Campaign has conversions but conversion value is zero or materially missing.",
+    "why_it_matters": "Smart bidding may optimize against incomplete value signals, making ROAS-based decisions unreliable.",
+    "recommendation": "Verify primary conversion actions, purchase value tracking, enhanced conversions, and imported revenue values."
+  },
+  {
+    "check_id": "PERF_006",
+    "name": "Active campaign with no impressions",
+    "category": "delivery",
+    "severity": "medium",
+    "condition_description": "Campaign is enabled but received no impressions in the latest period.",
+    "why_it_matters": "The campaign may be blocked by budget, targeting, policy, bidding, or setup issues.",
+    "recommendation": "Check status, budgets, bid strategy, targeting, ad approvals, assets, and policy restrictions."
+  },
+  {
+    "check_id": "PERF_007",
+    "name": "Spend concentration risk",
+    "category": "budget",
+    "severity": "medium",
+    "condition_description": "One campaign receives a disproportionately high share of total account spend.",
+    "why_it_matters": "Overconcentration can hide performance issues and increase dependency on a single campaign or algorithmic segment.",
+    "recommendation": "Review spend allocation across campaigns and check whether the dominant campaign is actually the most profitable one."
+  },
+  {
+    "check_id": "PERF_008",
+    "name": "Conversions dropped while spend did not decrease",
+    "category": "performance",
+    "severity": "high",
+    "condition_description": "Conversions declined while spend stayed stable or increased.",
+    "why_it_matters": "This indicates deteriorating traffic quality, auction efficiency, conversion rate, or tracking reliability.",
+    "recommendation": "Review search terms, CPC, CTR, landing page conversion rate, device/geographic segments, and recent account changes."
   },
   {
     "check_id": "STRUCT_001",
