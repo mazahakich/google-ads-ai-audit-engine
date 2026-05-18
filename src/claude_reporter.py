@@ -16,7 +16,8 @@ MEDIUM_FINDING_LIMIT = 20
 LOW_FINDING_LIMIT = 10
 
 
-def build_prompt(findings: list[dict]) -> str:
+def build_prompt(findings: list[dict], client_context: dict | None = None) -> str:
+    context = client_context or {}
     return f"""
 You are a senior UAATEAM-style Google Ads auditor. Produce a concise, prioritized, actionable markdown report.
 
@@ -33,6 +34,9 @@ Hard rules:
 - Prefer practical action items over explanation.
 - Always include all seven top-level sections exactly as listed below.
 - If space is tight, summarize groups of similar findings instead of adding more detail.
+
+Client context:
+{json.dumps(context, indent=2)}
 
 Use this exact markdown structure:
 
@@ -93,7 +97,7 @@ Findings JSON:
 """.strip()
 
 
-def generate_markdown_report(api_key: str, findings: list[dict]) -> str:
+def generate_markdown_report(api_key: str, findings: list[dict], client_context: dict | None = None) -> str:
     if not findings:
         return build_fallback_report([], "No findings generated.")
 
@@ -102,7 +106,7 @@ def generate_markdown_report(api_key: str, findings: list[dict]) -> str:
         message = client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=4500,
-            messages=[{"role": "user", "content": build_prompt(findings)}],
+            messages=[{"role": "user", "content": build_prompt(findings, client_context)}],
         )
         return message.content[0].text
     except Exception as exc:

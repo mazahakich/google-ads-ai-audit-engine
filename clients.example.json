@@ -1,0 +1,13 @@
+[
+  {
+    "client_id": "demo_client",
+    "client_name": "Demo Client",
+    "google_ads_customer_id": "1234567890",
+    "brand_terms": ["demo brand", "demobrand"],
+    "business_type": "ecommerce",
+    "currency": "USD",
+    "target_roas": 3.0,
+    "target_cpa": null,
+    "notes": "Example client config. Do not put secrets here."
+  }
+]

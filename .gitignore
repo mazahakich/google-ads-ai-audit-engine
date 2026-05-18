@@ -1,4 +1,5 @@
 .env
+clients.json
 client_secret.json
 get_refresh_token.py
 test_google_ads.py
