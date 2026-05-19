@@ -144,3 +144,79 @@ GOOGLE_SERVICE_ACCOUNT_FILE=service_account.json
 ```
 
 For service account mode, share the destination Drive folder with the service account email address using Editor access. OAuth mode is recommended when Docs should be created under a normal Google user account.
+
+## Internal Notifications
+
+Notifications are optional and are intended for internal review workflow only. They do not send reports to clients and do not make any Google Ads account changes.
+
+Add these settings to `.env` to enable notifications:
+
+```bash
+NOTIFICATIONS_ENABLED=true
+NOTIFICATION_CHANNEL=telegram
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+```
+
+Telegram setup:
+
+1. Create a Telegram bot with BotFather.
+2. Add the bot to the internal audit/review chat.
+3. Set `NOTIFICATION_CHANNEL=telegram`.
+4. Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`.
+5. Run `python3 -m src.main`.
+
+Notification behavior:
+
+- One notification is sent per client after that client audit finishes.
+- Multi-client mode also sends an aggregate run summary after all clients finish.
+- Each notification includes client name, review status, finding counts, high/critical count, reviewers, Google Doc link, and local report path.
+- Notification failures are recorded in `reports/run_summary.md` and do not stop report generation.
+
+## API Mode For n8n
+
+The audit engine can run as a FastAPI service so n8n can orchestrate Zoho Projects. Python does not read Zoho tasks and does not post Zoho comments. n8n owns the Zoho workflow.
+
+Start the API:
+
+```bash
+uvicorn src.api:app --host 0.0.0.0 --port 8000
+```
+
+Optional API auth:
+
+```bash
+AUDIT_API_KEY=
+```
+
+If `AUDIT_API_KEY` is set, API requests must include:
+
+```text
+X-Audit-Api-Key: <key>
+```
+
+Example request:
+
+```bash
+curl -X POST http://localhost:8000/run-audit \
+  -H "Content-Type: application/json" \
+  -H "X-Audit-Api-Key: optional_key" \
+  -d '{
+    "client_id": "demo_client",
+    "client_name": "Demo Client",
+    "google_ads_customer_id": "1234567890",
+    "brand_terms": ["demo brand"],
+    "business_type": "ecommerce",
+    "currency": "USD",
+    "target_roas": 3.0,
+    "zoho_task_id": "123456789"
+  }'
+```
+
+n8n ownership:
+
+- n8n reads the Zoho task.
+- n8n extracts the Google Ads Customer ID.
+- n8n calls `POST /run-audit`.
+- n8n uses `response.google_doc_url` to comment back in Zoho.
+- n8n can also send Telegram notifications, while Python Telegram notification remains available as an optional fallback.

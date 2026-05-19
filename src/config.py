@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import json
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -29,6 +30,11 @@ class Settings:
     google_docs_token_file: Path
     google_drive_parent_folder_id: str | None
     google_service_account_file: Path | None
+    notifications_enabled: bool
+    notification_channel: str
+    telegram_bot_token: str | None
+    telegram_chat_id: str | None
+    audit_api_key: str | None
     audit_checks_path: Path
     reports_dir: Path
 
@@ -44,6 +50,13 @@ class ClientConfig:
     target_roas: float | None = None
     target_cpa: float | None = None
     notes: str | None = None
+
+
+EXAMPLE_CLIENTS_FILENAME = "clients.example.json"
+DEFAULT_CLIENTS_FILENAME = "clients.json"
+DEMO_CLIENT_IDS = {"demo", "demo_client", "example", "example_client"}
+DEMO_CLIENT_NAMES = {"demo client", "example client"}
+PLACEHOLDER_CUSTOMER_IDS = {"1234567890", "0000000000", "1111111111"}
 
 
 def load_settings() -> Settings:
@@ -69,10 +82,7 @@ def load_settings() -> Settings:
             values[key] = value
 
     root = Path(__file__).resolve().parent.parent
-    clients_config_path = resolve_project_path(
-        os.getenv("CLIENTS_CONFIG_PATH", "clients.json"),
-        root,
-    )
+    clients_config_path = select_clients_config_path(root)
 
     google_ads_customer_id = os.getenv("GOOGLE_ADS_CUSTOMER_ID")
     if not clients_config_path.exists() and not google_ads_customer_id:
@@ -104,6 +114,11 @@ def load_settings() -> Settings:
         google_docs_token_file=docs_token_file,
         google_drive_parent_folder_id=optional_string(os.getenv("GOOGLE_DRIVE_PARENT_FOLDER_ID")),
         google_service_account_file=service_account_file,
+        notifications_enabled=parse_bool(os.getenv("NOTIFICATIONS_ENABLED", "false")),
+        notification_channel=os.getenv("NOTIFICATION_CHANNEL", "telegram").strip().lower(),
+        telegram_bot_token=optional_string(os.getenv("TELEGRAM_BOT_TOKEN")),
+        telegram_chat_id=optional_string(os.getenv("TELEGRAM_CHAT_ID")),
+        audit_api_key=optional_string(os.getenv("AUDIT_API_KEY")),
         audit_checks_path=root / "audit_checks.json",
         reports_dir=root / "reports",
     )
@@ -111,7 +126,14 @@ def load_settings() -> Settings:
 
 def load_client_configs(settings: Settings) -> tuple[ClientConfig, ...]:
     if settings.clients_config_path.exists():
-        return load_clients_file(settings.clients_config_path, settings.brand_terms)
+        clients = load_clients_file(
+            settings.clients_config_path,
+            settings.brand_terms,
+            allow_demo_clients=parse_bool(os.getenv("CLIENTS_ALLOW_DEMO_CLIENTS", "false")),
+        )
+        if clients:
+            return clients
+        warn("No valid runtime clients found in clients config; falling back to GOOGLE_ADS_CUSTOMER_ID.")
 
     if not settings.google_ads_customer_id:
         raise ConfigError("GOOGLE_ADS_CUSTOMER_ID is required when clients.json is not present.")
@@ -126,7 +148,16 @@ def load_client_configs(settings: Settings) -> tuple[ClientConfig, ...]:
     )
 
 
-def load_clients_file(path: Path, fallback_brand_terms: tuple[str, ...]) -> tuple[ClientConfig, ...]:
+def load_clients_file(
+    path: Path,
+    fallback_brand_terms: tuple[str, ...],
+    *,
+    allow_demo_clients: bool = False,
+) -> tuple[ClientConfig, ...]:
+    if is_example_clients_path(path):
+        warn("clients.example.json is documentation only and will not be used as runtime input.")
+        return ()
+
     try:
         raw_clients = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
@@ -152,6 +183,10 @@ def load_clients_file(path: Path, fallback_brand_terms: tuple[str, ...]) -> tupl
         if client_id in seen_client_ids:
             raise ConfigError(f"Duplicate client_id in clients configuration: {client_id}")
 
+        if is_demo_or_placeholder_client(raw_client) and not allow_demo_clients:
+            warn("Skipping demo or placeholder client entry from runtime clients config.")
+            continue
+
         seen_client_ids.add(client_id)
         client_brand_terms = parse_brand_terms(raw_client.get("brand_terms", ())) or fallback_brand_terms
 
@@ -170,6 +205,44 @@ def load_clients_file(path: Path, fallback_brand_terms: tuple[str, ...]) -> tupl
         )
 
     return tuple(clients)
+
+
+def select_clients_config_path(root: Path) -> Path:
+    configured_path = optional_string(os.getenv("CLIENTS_CONFIG_PATH"))
+    default_path = root / DEFAULT_CLIENTS_FILENAME
+
+    if configured_path:
+        explicit_path = resolve_project_path(configured_path, root)
+        if is_example_clients_path(explicit_path):
+            warn("CLIENTS_CONFIG_PATH points to clients.example.json, which is documentation only. Ignoring it.")
+        elif explicit_path.exists():
+            return explicit_path
+        else:
+            warn("Configured CLIENTS_CONFIG_PATH does not exist; checking for clients.json instead.")
+
+    if default_path.exists():
+        return default_path
+
+    return default_path
+
+
+def is_example_clients_path(path: Path) -> bool:
+    return path.name == EXAMPLE_CLIENTS_FILENAME
+
+
+def is_demo_or_placeholder_client(raw_client: dict) -> bool:
+    client_id = str(raw_client.get("client_id", "")).strip().lower()
+    client_name = str(raw_client.get("client_name", "")).strip().lower()
+    customer_id = str(raw_client.get("google_ads_customer_id", "")).strip().replace("-", "")
+    return (
+        client_id in DEMO_CLIENT_IDS
+        or client_name in DEMO_CLIENT_NAMES
+        or customer_id in PLACEHOLDER_CUSTOMER_IDS
+    )
+
+
+def warn(message: str) -> None:
+    print(f"Warning: {message}", file=sys.stderr)
 
 
 def parse_brand_terms(value: str | list[str] | tuple[str, ...]) -> tuple[str, ...]:

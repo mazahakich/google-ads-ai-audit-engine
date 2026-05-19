@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from datetime import datetime, timezone
@@ -26,6 +27,7 @@ from .conversions import ConversionActionQueryError, fetch_conversion_actions
 from .google_docs_exporter import GoogleDocsExportError, export_markdown_report
 from .google_ads_client import GoogleAdsClientError, build_google_ads_client
 from .metrics import fetch_campaign_metrics
+from .notifier import NotificationConfig, NotificationError, notification_result, notify_client_audit, notify_run_summary
 from .pmax import PMaxQueryError, fetch_pmax_asset_groups
 from .search_terms import SearchTermQueryError, fetch_search_terms
 from .segments import (
@@ -39,11 +41,13 @@ from .segments import (
 
 def run() -> int:
     try:
+        parse_args()
         settings = load_settings()
-        client_configs = load_client_configs(settings)
         client = build_google_ads_client(settings)
         check_catalog = load_check_catalog(settings.audit_checks_path)
+        notification_config = notification_config_from_settings(settings)
 
+        client_configs = load_client_configs(settings)
         multi_client_mode = settings.clients_config_path.exists()
         summaries = []
 
@@ -51,7 +55,7 @@ def run() -> int:
             report_dir = client_report_dir(settings.reports_dir, client_config, multi_client_mode)
             try:
                 summaries.append(
-                    audit_client(
+                    run_audit_for_client(
                         client,
                         client_config,
                         check_catalog,
@@ -75,10 +79,15 @@ def run() -> int:
                         "google_doc_url": None,
                         "status": "failed",
                         "error": str(exc),
+                        **notification_result(False, notification_config.channel),
                     }
                 )
 
+        for summary in summaries:
+            apply_client_notification(summary, notification_config)
+
         if multi_client_mode:
+            apply_run_summary_notification(summaries, notification_config)
             summary_path = write_run_summary(summaries, settings.reports_dir)
             print(f"\nRun summary saved to: {summary_path}")
 
@@ -97,7 +106,12 @@ def run() -> int:
     return 1
 
 
-def audit_client(
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run Google Ads AI audits.")
+    return parser.parse_args()
+
+
+def run_audit_for_client(
     client,
     client_config: ClientConfig,
     check_catalog: dict[str, dict],
@@ -225,6 +239,8 @@ def audit_client(
         "client_name": client_config.client_name,
         "findings_count": findings_payload["summary"]["processed_count"],
         "counts": findings_payload["summary"]["processed_counts_by_severity"],
+        "findings_path": str(findings_path),
+        "review_status_path": str(review_status_path),
         "high_priority_findings": review_metadata["high_priority_findings"],
         "review_status": review_metadata["review_status"],
         "suggested_reviewers": review_metadata["required_reviewers"] + review_metadata["additional_reviewers"],
@@ -232,7 +248,36 @@ def audit_client(
         "google_doc_url": google_doc_url,
         "status": status,
         "warnings": warnings,
+        **notification_result(False, settings.notification_channel),
     }
+
+
+def notification_config_from_settings(settings: Settings) -> NotificationConfig:
+    return NotificationConfig(
+        enabled=settings.notifications_enabled,
+        channel=settings.notification_channel,
+        telegram_bot_token=settings.telegram_bot_token,
+        telegram_chat_id=settings.telegram_chat_id,
+    )
+
+
+def apply_client_notification(summary: dict, config: NotificationConfig) -> None:
+    try:
+        summary.update(notify_client_audit(summary, config))
+    except NotificationError as exc:
+        summary.update(notification_result(False, config.channel, str(exc)))
+        print(f"Warning: notification failed for {summary.get('client_name', 'client')}: {exc}", file=sys.stderr)
+
+
+def apply_run_summary_notification(summaries: list[dict], config: NotificationConfig) -> None:
+    try:
+        result = notify_run_summary(summaries, config)
+    except NotificationError as exc:
+        print(f"Warning: run summary notification failed: {exc}", file=sys.stderr)
+        return
+
+    if result["notification_sent"]:
+        print(f"Run summary notification sent via {result['notification_channel']}.")
 
 
 def client_report_dir(reports_dir: Path, client_config: ClientConfig, multi_client_mode: bool) -> Path:
@@ -340,8 +385,8 @@ def write_run_summary(summaries: list[dict], reports_dir: Path) -> Path:
     lines = [
         "# Google Ads AI Audit Run Summary",
         "",
-        "| Client | Findings | High/Critical | Google Doc | Review Status | Suggested Reviewers | Report | Status |",
-        "|---|---:|---:|---|---|---|---|---|",
+        "| Client | Findings | High/Critical | Google Doc | Review Status | Suggested Reviewers | Report | Notification Sent | Notification Channel | Notification Error | Status |",
+        "|---|---:|---:|---|---|---|---|---|---|---|---|",
     ]
 
     for summary in summaries:
@@ -350,8 +395,9 @@ def write_run_summary(summaries: list[dict], reports_dir: Path) -> Path:
         google_doc_url = summary.get("google_doc_url")
         google_doc_link = f"[Google Doc]({google_doc_url})" if google_doc_url else "Not exported"
         reviewers = ", ".join(summary.get("suggested_reviewers") or ["PPC Specialist"])
+        notification_error = summary.get("notification_error") or ""
         lines.append(
-            "| {client} | {findings} | {high_priority} | {google_doc} | {review_status} | {reviewers} | {report} | {status} |".format(
+            "| {client} | {findings} | {high_priority} | {google_doc} | {review_status} | {reviewers} | {report} | {notification_sent} | {notification_channel} | {notification_error} | {status} |".format(
                 client=summary.get("client_name", "Unknown client"),
                 findings=summary.get("findings_count", 0),
                 high_priority=summary.get("high_priority_findings", 0),
@@ -359,6 +405,9 @@ def write_run_summary(summaries: list[dict], reports_dir: Path) -> Path:
                 review_status=summary.get("review_status", "internal_draft"),
                 reviewers=reviewers,
                 report=report_link,
+                notification_sent=str(bool(summary.get("notification_sent"))).lower(),
+                notification_channel=summary.get("notification_channel") or "",
+                notification_error=notification_error.replace("|", "/"),
                 status=summary.get("status", "failed"),
             )
         )
