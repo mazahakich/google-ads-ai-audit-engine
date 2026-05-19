@@ -134,7 +134,7 @@ python3 -m src.main
 
 Single-client mode prints the Google Doc URL when export succeeds. Multi-client mode exports each client report separately and includes the Google Doc URL in `reports/run_summary.md`.
 
-The first version inserts the markdown report as plain text into the Google Doc. Advanced formatting can be layered in later without changing the local report flow.
+Google Docs export applies basic markdown-to-doc formatting for headings, bullets, bold labels, and simple tables as readable monospaced text. If formatting fails, the exporter falls back to plain markdown insertion so the audit still completes.
 
 Service account export remains available for older setups by setting:
 
