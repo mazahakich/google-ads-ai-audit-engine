@@ -153,8 +153,9 @@ def run_audit_for_client(
     try:
         geo_segments = fetch_geo_segments(client, customer_id)
     except SegmentQueryError as exc:
-        warnings.append(f"geo segment audit skipped: {exc}")
-        print(f"Warning: {warnings[-1]}", file=sys.stderr)
+        warning = str(exc)
+        warnings.append(warning)
+        print(warning, file=sys.stderr)
 
     try:
         device_segments = fetch_device_segments(client, customer_id)

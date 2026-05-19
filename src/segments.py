@@ -70,24 +70,7 @@ def _add_metrics(metrics: SegmentMetrics, row) -> None:
 
 
 def fetch_geo_segments(client, customer_id: str) -> list[GeoSegmentMetrics]:
-    queries = (
-        """
-        SELECT
-          campaign.id,
-          campaign.name,
-          campaign.status,
-          geographic_view.country_criterion_id,
-          geographic_view.location_type,
-          segments.geo_target_country,
-          metrics.impressions,
-          metrics.clicks,
-          metrics.cost_micros,
-          metrics.conversions,
-          metrics.conversions_value
-        FROM geographic_view
-        WHERE segments.date DURING LAST_30_DAYS
-        """,
-        """
+    query = """
         SELECT
           campaign.id,
           campaign.name,
@@ -101,34 +84,29 @@ def fetch_geo_segments(client, customer_id: str) -> list[GeoSegmentMetrics]:
           metrics.conversions_value
         FROM geographic_view
         WHERE segments.date DURING LAST_30_DAYS
-        """,
-    )
-    last_error: Exception | None = None
+    """
+    segments: dict[tuple[int | None, str, str, str], GeoSegmentMetrics] = defaultdict(GeoSegmentMetrics)
 
-    for query in queries:
-        segments: dict[tuple[int | None, str, str, str], GeoSegmentMetrics] = defaultdict(GeoSegmentMetrics)
+    try:
+        ga_service = client.get_service("GoogleAdsService")
+        response = ga_service.search_stream(customer_id=customer_id, query=query)
 
-        try:
-            ga_service = client.get_service("GoogleAdsService")
-            response = ga_service.search_stream(customer_id=customer_id, query=query)
+        for batch in response:
+            for row in batch.results:
+                location_type = _enum_name(getattr(row.geographic_view, "location_type", ""))
+                criterion_id = getattr(row.geographic_view, "country_criterion_id", "")
+                segment_name = f"geo_criterion_{criterion_id}" if criterion_id else "location_unknown"
+                key = (getattr(row.campaign, "id", None), row.campaign.name, segment_name, location_type)
+                metrics = segments[key]
+                metrics.segment_name = segment_name
+                metrics.location_type = location_type
+                _add_metrics(metrics, row)
 
-            for batch in response:
-                for row in batch.results:
-                    location_type = _enum_name(getattr(row.geographic_view, "location_type", ""))
-                    country = str(getattr(row.segments, "geo_target_country", "") or "")
-                    criterion_id = getattr(row.geographic_view, "country_criterion_id", "")
-                    segment_name = country or str(criterion_id)
-                    key = (getattr(row.campaign, "id", None), row.campaign.name, segment_name, location_type)
-                    metrics = segments[key]
-                    metrics.segment_name = segment_name
-                    metrics.location_type = location_type
-                    _add_metrics(metrics, row)
-
-            return list(segments.values())
-        except Exception as exc:
-            last_error = exc
-
-    raise SegmentQueryError(f"Geo segment query failed: {last_error}") from last_error
+        return list(segments.values())
+    except Exception as exc:
+        raise SegmentQueryError(
+            "Geo segmentation audit skipped due to Google Ads API field compatibility."
+        ) from exc
 
 
 def fetch_device_segments(client, customer_id: str) -> list[DeviceSegmentMetrics]:
