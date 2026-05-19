@@ -23,6 +23,12 @@ class Settings:
     anthropic_api_key: str
     brand_terms: tuple[str, ...]
     clients_config_path: Path
+    google_docs_export_enabled: bool
+    google_docs_auth_mode: str
+    google_docs_client_secret_file: Path | None
+    google_docs_token_file: Path
+    google_drive_parent_folder_id: str | None
+    google_service_account_file: Path | None
     audit_checks_path: Path
     reports_dir: Path
 
@@ -77,11 +83,27 @@ def load_settings() -> Settings:
         raise ConfigError(f"Missing required environment variables: {joined}")
 
     brand_terms = parse_brand_terms(os.getenv("BRAND_TERMS", ""))
+    google_docs_auth_mode = os.getenv("GOOGLE_DOCS_AUTH_MODE", "oauth").strip().lower()
+    if google_docs_auth_mode not in {"oauth", "service_account"}:
+        raise ConfigError("GOOGLE_DOCS_AUTH_MODE must be either oauth or service_account.")
+
+    docs_client_secret_file = optional_project_path(
+        os.getenv("GOOGLE_DOCS_CLIENT_SECRET_FILE", "google_docs_client_secret.json"),
+        root,
+    )
+    docs_token_file = resolve_project_path(os.getenv("GOOGLE_DOCS_TOKEN_FILE", "google_docs_token.json"), root)
+    service_account_file = optional_project_path(os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE"), root)
     return Settings(
         **values,
         google_ads_customer_id=google_ads_customer_id,
         brand_terms=brand_terms,
         clients_config_path=clients_config_path,
+        google_docs_export_enabled=parse_bool(os.getenv("GOOGLE_DOCS_EXPORT_ENABLED", "false")),
+        google_docs_auth_mode=google_docs_auth_mode,
+        google_docs_client_secret_file=docs_client_secret_file,
+        google_docs_token_file=docs_token_file,
+        google_drive_parent_folder_id=optional_string(os.getenv("GOOGLE_DRIVE_PARENT_FOLDER_ID")),
+        google_service_account_file=service_account_file,
         audit_checks_path=root / "audit_checks.json",
         reports_dir=root / "reports",
     )
@@ -180,3 +202,14 @@ def optional_float(value: object) -> float | None:
         return float(value)
     except (TypeError, ValueError) as exc:
         raise ConfigError(f"Expected numeric value, got: {value}") from exc
+
+
+def optional_project_path(value: object, root: Path) -> Path | None:
+    text = optional_string(value)
+    if not text:
+        return None
+    return resolve_project_path(text, root)
+
+
+def parse_bool(value: object) -> bool:
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}

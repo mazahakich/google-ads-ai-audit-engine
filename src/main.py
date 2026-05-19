@@ -19,9 +19,10 @@ from .claude_reporter import (
     write_findings,
     write_report,
 )
-from .config import ConfigError, load_settings
+from .config import ConfigError, Settings, load_settings
 from .config import ClientConfig, load_client_configs
 from .conversions import ConversionActionQueryError, fetch_conversion_actions
+from .google_docs_exporter import GoogleDocsExportError, export_markdown_report
 from .google_ads_client import GoogleAdsClientError, build_google_ads_client
 from .metrics import fetch_campaign_metrics
 from .pmax import PMaxQueryError, fetch_pmax_asset_groups
@@ -53,7 +54,7 @@ def run() -> int:
                         client,
                         client_config,
                         check_catalog,
-                        settings.anthropic_api_key,
+                        settings,
                         report_dir,
                     )
                 )
@@ -67,6 +68,7 @@ def run() -> int:
                         "findings_count": 0,
                         "counts": {"critical": 0, "high": 0, "medium": 0, "low": 0},
                         "report_path": "",
+                        "google_doc_url": None,
                         "status": "failed",
                         "error": str(exc),
                     }
@@ -95,7 +97,7 @@ def audit_client(
     client,
     client_config: ClientConfig,
     check_catalog: dict[str, dict],
-    anthropic_api_key: str,
+    settings: Settings,
     report_dir: Path,
 ) -> dict:
     warnings: list[str] = []
@@ -181,7 +183,7 @@ def audit_client(
     print(f"Findings JSON saved to: {findings_path}")
 
     report = generate_markdown_report(
-        anthropic_api_key,
+        settings.anthropic_api_key,
         claude_findings,
         client_context_for_prompt(client_config),
     )
@@ -190,12 +192,30 @@ def audit_client(
     report_path = write_report(report, report_dir)
     print(f"Audit report saved to: {report_path}")
 
+    google_doc_url = None
+    if settings.google_docs_export_enabled:
+        try:
+            google_doc_url = export_markdown_report(
+                report_path,
+                client_name=client_config.client_name,
+                auth_mode=settings.google_docs_auth_mode,
+                client_secret_file=settings.google_docs_client_secret_file,
+                token_file=settings.google_docs_token_file,
+                service_account_file=settings.google_service_account_file,
+                parent_folder_id=settings.google_drive_parent_folder_id,
+            )
+            print(f"Google Doc exported: {google_doc_url}")
+        except GoogleDocsExportError as exc:
+            warnings.append(f"Google Docs export skipped: {exc}")
+            print(f"Warning: {warnings[-1]}", file=sys.stderr)
+
     status = "partial" if warnings else "success"
     return {
         "client_name": client_config.client_name,
         "findings_count": findings_payload["summary"]["processed_count"],
         "counts": findings_payload["summary"]["processed_counts_by_severity"],
         "report_path": str(report_path),
+        "google_doc_url": google_doc_url,
         "status": status,
         "warnings": warnings,
     }
@@ -230,16 +250,18 @@ def write_run_summary(summaries: list[dict], reports_dir: Path) -> Path:
     lines = [
         "# Google Ads AI Audit Run Summary",
         "",
-        "| Client | Findings | Critical | High | Medium | Low | Report | Status |",
-        "|---|---:|---:|---:|---:|---:|---|---|",
+        "| Client | Findings | Critical | High | Medium | Low | Report | Google Doc | Status |",
+        "|---|---:|---:|---:|---:|---:|---|---|---|",
     ]
 
     for summary in summaries:
         counts = summary.get("counts", {})
         report_path = summary.get("report_path") or ""
         report_link = f"[Report]({report_path})" if report_path else "Not generated"
+        google_doc_url = summary.get("google_doc_url")
+        google_doc_link = f"[Google Doc]({google_doc_url})" if google_doc_url else "Not exported"
         lines.append(
-            "| {client} | {findings} | {critical} | {high} | {medium} | {low} | {report} | {status} |".format(
+            "| {client} | {findings} | {critical} | {high} | {medium} | {low} | {report} | {google_doc} | {status} |".format(
                 client=summary.get("client_name", "Unknown client"),
                 findings=summary.get("findings_count", 0),
                 critical=counts.get("critical", 0),
@@ -247,6 +269,7 @@ def write_run_summary(summaries: list[dict], reports_dir: Path) -> Path:
                 medium=counts.get("medium", 0),
                 low=counts.get("low", 0),
                 report=report_link,
+                google_doc=google_doc_link,
                 status=summary.get("status", "failed"),
             )
         )

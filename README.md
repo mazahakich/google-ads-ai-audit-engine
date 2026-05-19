@@ -90,3 +90,57 @@ The Claude report receives non-secret client context where available:
 - limited brand term context
 
 No automatic account changes are made by this audit engine.
+
+## Google Docs Export
+
+Google Docs export is optional. Local markdown and JSON reports are always generated first, and Docs export failures are logged as warnings without stopping the audit.
+
+Add these settings to `.env` when you want Google Docs export:
+
+```bash
+GOOGLE_DOCS_EXPORT_ENABLED=true
+GOOGLE_DOCS_AUTH_MODE=oauth
+GOOGLE_DOCS_CLIENT_SECRET_FILE=google_docs_client_secret.json
+GOOGLE_DOCS_TOKEN_FILE=google_docs_token.json
+GOOGLE_DRIVE_PARENT_FOLDER_ID=
+```
+
+Setup steps:
+
+1. In Google Cloud, create or choose a project for reporting automation.
+2. Enable the Google Docs API and Google Drive API for that project.
+3. Create an OAuth Client ID of type Desktop App.
+4. Download the OAuth JSON and save it locally as `google_docs_client_secret.json`.
+5. Do not commit `google_docs_client_secret.json` or `google_docs_token.json`.
+6. On the first run, the app opens a browser for Google login and saves `google_docs_token.json` locally.
+7. Created Docs belong to the authenticated Google user account.
+8. If exporting into a specific Drive folder, copy the folder ID from the Google Drive URL and set `GOOGLE_DRIVE_PARENT_FOLDER_ID`. For example, this folder URL:
+
+```text
+https://drive.google.com/drive/u/2/folders/11iGQRLOOZfMpc3lC-BZskoVLBHN2hZ86
+```
+
+uses:
+
+```bash
+GOOGLE_DRIVE_PARENT_FOLDER_ID=11iGQRLOOZfMpc3lC-BZskoVLBHN2hZ86
+```
+
+9. Run:
+
+```bash
+python3 -m src.main
+```
+
+Single-client mode prints the Google Doc URL when export succeeds. Multi-client mode exports each client report separately and includes the Google Doc URL in `reports/run_summary.md`.
+
+The first version inserts the markdown report as plain text into the Google Doc. Advanced formatting can be layered in later without changing the local report flow.
+
+Service account export remains available for older setups by setting:
+
+```bash
+GOOGLE_DOCS_AUTH_MODE=service_account
+GOOGLE_SERVICE_ACCOUNT_FILE=service_account.json
+```
+
+For service account mode, share the destination Drive folder with the service account email address using Editor access. OAuth mode is recommended when Docs should be created under a normal Google user account.

@@ -1,6 +1,10 @@
 .env
 clients.json
 client_secret.json
+google_docs_client_secret.json
+google_docs_token.json
+service_account.json
+*.service-account.json
 get_refresh_token.py
 test_google_ads.py
 audit_google_ads.py
