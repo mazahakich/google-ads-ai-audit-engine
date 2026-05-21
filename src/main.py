@@ -24,6 +24,8 @@ from .claude_reporter import (
 from .config import ConfigError, Settings, load_settings
 from .config import ClientConfig, load_client_configs
 from .conversions import ConversionActionQueryError, fetch_conversion_actions
+from .evidence import collect_evidence_pack
+from .finding_validation import validate_findings
 from .google_docs_exporter import GoogleDocsExportError, export_markdown_report
 from .google_ads_client import GoogleAdsClientError, build_google_ads_client
 from .metrics import fetch_campaign_metrics
@@ -175,6 +177,10 @@ def run_audit_for_client(
         warnings.append(f"hour-of-day segment audit skipped: {exc}")
         print(f"Warning: {warnings[-1]}", file=sys.stderr)
 
+    evidence_dir, evidence_warnings = collect_evidence_pack(client, client_config, report_dir)
+    warnings.extend(f"evidence pack: {warning}" for warning in evidence_warnings)
+    print(f"Evidence pack saved to: {evidence_dir}")
+
     findings = generate_findings(campaign_data, check_catalog)
     findings.extend(generate_conversion_findings(conversion_actions, check_catalog, campaign_data))
     findings.extend(generate_search_term_findings(search_terms, check_catalog, client_config.brand_terms))
@@ -189,15 +195,32 @@ def run_audit_for_client(
         )
     )
 
-    findings_payload = build_findings_payload(findings)
+    validation_result = validate_findings(
+        findings,
+        evidence_dir=evidence_dir,
+        brand_terms=client_config.brand_terms,
+    )
+    validated_findings = validation_result["validated_findings"]
+    rejected_findings = validation_result["rejected_findings"]
+    validation_summary = validation_result["validation_summary"]
+
+    findings_payload = build_findings_payload(validated_findings)
+    findings_payload["raw_findings"] = findings
+    findings_payload["validated_findings"] = validated_findings
+    findings_payload["rejected_findings_count"] = len(rejected_findings)
+    findings_payload["validation_summary"] = validation_summary
+    findings_payload["summary"]["raw_count"] = len(findings)
+    findings_payload["summary"]["validated_count"] = len(validated_findings)
+    findings_payload["summary"]["rejected_count"] = len(rejected_findings)
     findings_path = write_findings(findings_payload, report_dir)
     claude_findings = findings_payload["claude_findings"]
     review_metadata = build_review_metadata(client_config, findings_payload)
 
     print(
         "AI findings generated: "
-        f"{findings_payload['summary']['raw_count']} raw, "
-        f"{findings_payload['summary']['processed_count']} deduped, "
+        f"{len(findings)} raw, "
+        f"{len(validated_findings)} validated, "
+        f"{len(rejected_findings)} rejected, "
         f"{findings_payload['summary']['claude_payload_count']} sent to Claude."
     )
     print(f"Findings JSON saved to: {findings_path}")
@@ -209,6 +232,7 @@ def run_audit_for_client(
     )
     if "Claude report generation failed:" in report:
         warnings.append("Claude report generated from local fallback data.")
+    report = add_data_validation_notes(report, validation_summary)
     report = add_review_workflow_section(report, review_metadata)
     report_path = write_report(report, report_dir)
     print(f"Audit report saved to: {report_path}")
@@ -241,6 +265,7 @@ def run_audit_for_client(
         "findings_count": findings_payload["summary"]["processed_count"],
         "counts": findings_payload["summary"]["processed_counts_by_severity"],
         "findings_path": str(findings_path),
+        "evidence_path": str(evidence_dir),
         "review_status_path": str(review_status_path),
         "high_priority_findings": review_metadata["high_priority_findings"],
         "review_status": review_metadata["review_status"],
@@ -363,6 +388,25 @@ def add_review_workflow_section(report: str, metadata: dict) -> str:
             "- [ ] Check recent account change history",
             "- [ ] Remove or rewrite anything not suitable for client delivery",
             "- [ ] Approve final version before sharing with client",
+            "",
+        ]
+    )
+
+    lines = report.splitlines()
+    if lines and lines[0].startswith("# "):
+        return "\n".join([lines[0], "", section, *lines[1:]]).strip() + "\n"
+    return f"# Google Ads AI Audit Report\n\n{section}{report}".strip() + "\n"
+
+
+def add_data_validation_notes(report: str, validation_summary: dict) -> str:
+    section = "\n".join(
+        [
+            "## Data Validation Notes",
+            "- Findings were validated before AI analysis using the local evidence pack.",
+            f"- Rejected findings: {validation_summary.get('rejected_findings_count', 0)}",
+            f"- Low-confidence findings: {validation_summary.get('low_confidence_count', 0)}",
+            "- GA4 validation is not yet connected.",
+            "- Some Google Ads settings and tracking details still require manual UI verification.",
             "",
         ]
     )

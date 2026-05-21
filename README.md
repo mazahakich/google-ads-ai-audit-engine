@@ -19,6 +19,7 @@ Outputs:
 
 - `reports/latest_audit.md`
 - `reports/latest_findings.json`
+- `reports/evidence/`
 
 ## Multi-Client Mode
 
@@ -64,6 +65,7 @@ Outputs:
 
 - `reports/{client_id}/latest_audit.md`
 - `reports/{client_id}/latest_findings.json`
+- `reports/{client_id}/evidence/`
 - `reports/run_summary.md`
 
 If one client fails in multi-client mode, the runner records the failure in `reports/run_summary.md` and continues with the next client.
@@ -90,6 +92,41 @@ The Claude report receives non-secret client context where available:
 - limited brand term context
 
 No automatic account changes are made by this audit engine.
+
+## Evidence Packs
+
+Every audit run creates a deterministic evidence pack before AI report generation. Evidence packs store API-accessible Google Ads data in JSON so reviewers can validate the report against source metrics before using recommendations with a client.
+
+Evidence output location:
+
+- Single-client mode: `reports/evidence/`
+- Multi-client/API mode: `reports/{client_id}/evidence/`
+
+Generated files:
+
+- `audit_metadata.json`
+- `google_ads_campaigns_30d.json`
+- `google_ads_campaigns_60d.json`
+- `google_ads_campaigns_90d.json`
+- `google_ads_campaigns_180d.json`
+- `conversion_actions.json`
+- `search_terms_30d.json`
+- `pmax_asset_groups_30d.json`
+- `segments_30d.json`
+
+Date range logic uses complete days only and always excludes today. For example, if the run date is `2026-05-20`, `last_30_days` covers `2026-04-20` through `2026-05-19`. Evidence queries use explicit Google Ads date filters:
+
+```sql
+segments.date BETWEEN 'YYYY-MM-DD' AND 'YYYY-MM-DD'
+```
+
+To validate campaign evidence against the Google Ads UI:
+
+1. Open Google Ads and select the same customer ID shown in `audit_metadata.json`.
+2. Set the UI date range to the exact `start_date` and `end_date` from `audit_metadata.json`.
+3. Compare campaign-level impressions, clicks, cost, conversions, conversion value, CPA, and ROAS with the matching `google_ads_campaigns_*d.json` file.
+4. Use the same complete-day range and account currency. Today should not be included.
+5. Treat geographic IDs such as `geo_criterion_2840` as Google Ads location criterion IDs that may require manual lookup.
 
 ## Google Docs Export
 

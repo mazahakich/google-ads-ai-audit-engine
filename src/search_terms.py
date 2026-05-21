@@ -68,9 +68,21 @@ def _aggregate_row(terms: dict[tuple[str, str, str], SearchTermMetrics], row) ->
     metrics.conversion_value += row.metrics.conversions_value
 
 
-def fetch_search_terms(client, customer_id: str) -> list[SearchTermMetrics]:
+def _date_filter(start_date: str | None = None, end_date: str | None = None) -> str:
+    if start_date and end_date:
+        return f"segments.date BETWEEN '{start_date}' AND '{end_date}'"
+    return "segments.date DURING LAST_30_DAYS"
+
+
+def fetch_search_terms(
+    client,
+    customer_id: str,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> list[SearchTermMetrics]:
+    date_filter = _date_filter(start_date, end_date)
     queries = (
-        """
+        f"""
         SELECT
           search_term_view.search_term,
           campaign.id,
@@ -87,9 +99,9 @@ def fetch_search_terms(client, customer_id: str) -> list[SearchTermMetrics]:
           metrics.ctr,
           metrics.average_cpc
         FROM search_term_view
-        WHERE segments.date DURING LAST_30_DAYS
+        WHERE {date_filter}
         """,
-        """
+        f"""
         SELECT
           search_term_view.search_term,
           campaign.id,
@@ -104,9 +116,9 @@ def fetch_search_terms(client, customer_id: str) -> list[SearchTermMetrics]:
           metrics.conversions,
           metrics.conversions_value
         FROM search_term_view
-        WHERE segments.date DURING LAST_30_DAYS
+        WHERE {date_filter}
         """,
-        """
+        f"""
         SELECT
           search_term_view.search_term,
           campaign.name,
@@ -117,7 +129,7 @@ def fetch_search_terms(client, customer_id: str) -> list[SearchTermMetrics]:
           metrics.conversions,
           metrics.conversions_value
         FROM search_term_view
-        WHERE segments.date DURING LAST_30_DAYS
+        WHERE {date_filter}
         """,
     )
     last_error: Exception | None = None

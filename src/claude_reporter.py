@@ -22,10 +22,14 @@ def build_prompt(findings: list[dict], client_context: dict | None = None) -> st
 You are a senior UAATEAM-style Google Ads auditor. Produce a concise, prioritized, actionable markdown report.
 
 Hard rules:
-- Use only the provided findings.
+- Use only the provided validated findings.
 - Do not invent numbers.
 - Do not invent campaigns, search terms, conversion actions, asset groups, or segments.
 - If evidence is missing, say what needs manual validation.
+- Mention confidence level where it materially affects interpretation.
+- Label low-confidence findings as requiring manual validation.
+- Use "reported conversion value" unless revenue is explicitly confirmed in the finding evidence.
+- Do not make recommendations from rejected findings; rejected findings are not included in this payload.
 - Avoid repeating the same issue multiple times.
 - Merge duplicate or closely related findings into one recommendation when appropriate.
 - Be direct and professional.
@@ -34,6 +38,7 @@ Hard rules:
 - Prefer practical action items over explanation.
 - Always include all seven top-level sections exactly as listed below.
 - If space is tight, summarize groups of similar findings instead of adding more detail.
+- Do not invent metrics, date ranges, or evidence sources.
 
 Client context:
 {json.dumps(context, indent=2)}
@@ -154,14 +159,19 @@ def normalize_finding(finding: dict) -> dict:
     scope = finding.get("scope") or ("campaign" if finding.get("campaign") else "account")
 
     normalized = {
+        "finding_id": finding.get("finding_id"),
         "scope": scope,
         "entity_type": entity_type,
+        "entity_id": finding.get("entity_id"),
         "entity_name": entity_name,
         "campaign": campaign,
         "severity": severity,
+        "confidence": finding.get("confidence"),
+        "manual_validation_required": finding.get("manual_validation_required"),
         "triggered_checks": normalized_checks,
         "context": context,
-        "evidence": build_evidence(finding, context),
+        "evidence": finding.get("evidence") or build_evidence(finding, context),
+        "validation": finding.get("validation"),
     }
 
     return {key: value for key, value in normalized.items() if value is not None}

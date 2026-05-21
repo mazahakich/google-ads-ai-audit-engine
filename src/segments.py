@@ -69,8 +69,20 @@ def _add_metrics(metrics: SegmentMetrics, row) -> None:
     metrics.conversion_value += row.metrics.conversions_value
 
 
-def fetch_geo_segments(client, customer_id: str) -> list[GeoSegmentMetrics]:
-    query = """
+def _date_filter(start_date: str | None = None, end_date: str | None = None) -> str:
+    if start_date and end_date:
+        return f"segments.date BETWEEN '{start_date}' AND '{end_date}'"
+    return "segments.date DURING LAST_30_DAYS"
+
+
+def fetch_geo_segments(
+    client,
+    customer_id: str,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> list[GeoSegmentMetrics]:
+    date_filter = _date_filter(start_date, end_date)
+    query = f"""
         SELECT
           campaign.id,
           campaign.name,
@@ -83,7 +95,7 @@ def fetch_geo_segments(client, customer_id: str) -> list[GeoSegmentMetrics]:
           metrics.conversions,
           metrics.conversions_value
         FROM geographic_view
-        WHERE segments.date DURING LAST_30_DAYS
+        WHERE {date_filter}
     """
     segments: dict[tuple[int | None, str, str, str], GeoSegmentMetrics] = defaultdict(GeoSegmentMetrics)
 
@@ -109,8 +121,14 @@ def fetch_geo_segments(client, customer_id: str) -> list[GeoSegmentMetrics]:
         ) from exc
 
 
-def fetch_device_segments(client, customer_id: str) -> list[DeviceSegmentMetrics]:
-    query = """
+def fetch_device_segments(
+    client,
+    customer_id: str,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> list[DeviceSegmentMetrics]:
+    date_filter = _date_filter(start_date, end_date)
+    query = f"""
         SELECT
           campaign.id,
           campaign.name,
@@ -122,7 +140,7 @@ def fetch_device_segments(client, customer_id: str) -> list[DeviceSegmentMetrics
           metrics.conversions,
           metrics.conversions_value
         FROM campaign
-        WHERE segments.date DURING LAST_30_DAYS
+        WHERE {date_filter}
     """
     segments: dict[tuple[int | None, str, str], DeviceSegmentMetrics] = defaultdict(DeviceSegmentMetrics)
 
@@ -143,8 +161,14 @@ def fetch_device_segments(client, customer_id: str) -> list[DeviceSegmentMetrics
         raise SegmentQueryError(f"Device segment query failed: {exc}") from exc
 
 
-def fetch_day_of_week_segments(client, customer_id: str) -> list[TimeSegmentMetrics]:
-    query = """
+def fetch_day_of_week_segments(
+    client,
+    customer_id: str,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> list[TimeSegmentMetrics]:
+    date_filter = _date_filter(start_date, end_date)
+    query = f"""
         SELECT
           campaign.id,
           campaign.name,
@@ -156,13 +180,19 @@ def fetch_day_of_week_segments(client, customer_id: str) -> list[TimeSegmentMetr
           metrics.conversions,
           metrics.conversions_value
         FROM campaign
-        WHERE segments.date DURING LAST_30_DAYS
+        WHERE {date_filter}
     """
     return _fetch_time_segments(client, customer_id, query, "day_of_week")
 
 
-def fetch_hour_of_day_segments(client, customer_id: str) -> list[TimeSegmentMetrics]:
-    query = """
+def fetch_hour_of_day_segments(
+    client,
+    customer_id: str,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> list[TimeSegmentMetrics]:
+    date_filter = _date_filter(start_date, end_date)
+    query = f"""
         SELECT
           campaign.id,
           campaign.name,
@@ -174,7 +204,7 @@ def fetch_hour_of_day_segments(client, customer_id: str) -> list[TimeSegmentMetr
           metrics.conversions,
           metrics.conversions_value
         FROM campaign
-        WHERE segments.date DURING LAST_30_DAYS
+        WHERE {date_filter}
     """
     return _fetch_time_segments(client, customer_id, query, "hour_of_day")
 

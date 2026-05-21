@@ -76,6 +76,7 @@ def build_success_response(summary: dict, client_config: ClientConfig, zoho_task
         "google_doc_url": summary.get("google_doc_url"),
         "local_report_path": summary.get("report_path"),
         "findings_path": summary.get("findings_path"),
+        "evidence_path": summary.get("evidence_path"),
         "findings_count": summary.get("findings_count", 0),
         "high_critical_findings": summary.get("high_priority_findings", 0),
         "review_status": summary.get("review_status", "internal_draft"),

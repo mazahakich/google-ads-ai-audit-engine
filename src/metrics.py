@@ -4,6 +4,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
+from .date_ranges import DateRange
 from .google_ads_client import GoogleAdsClientError
 
 
@@ -73,6 +74,39 @@ class CampaignMetrics:
     @property
     def previous7_cpa(self) -> float:
         return self.prev7_cost / self.prev7_conv if self.prev7_conv > 0 else 0
+
+
+@dataclass
+class CampaignPeriodMetrics:
+    campaign_id: int | None = None
+    campaign_name: str = ""
+    campaign_status: str = ""
+    advertising_channel_type: str = ""
+    bidding_strategy_type: str = ""
+    impressions: int = 0
+    clicks: int = 0
+    cost: float = 0.0
+    conversions: float = 0.0
+    conversion_value: float = 0.0
+    period_label: str = ""
+    start_date: str = ""
+    end_date: str = ""
+
+    @property
+    def ctr(self) -> float:
+        return self.clicks / self.impressions if self.impressions > 0 else 0
+
+    @property
+    def average_cpc(self) -> float:
+        return self.cost / self.clicks if self.clicks > 0 else 0
+
+    @property
+    def cpa(self) -> float:
+        return self.cost / self.conversions if self.conversions > 0 else 0
+
+    @property
+    def roas(self) -> float:
+        return self.conversion_value / self.cost if self.cost > 0 else 0
 
 
 def _enum_name(value) -> str:
@@ -172,3 +206,73 @@ def fetch_campaign_metrics(client, customer_id: str) -> dict[str, CampaignMetric
             last_error = exc
 
     raise GoogleAdsClientError(f"Google Ads query failed: {last_error}") from last_error
+
+
+def fetch_campaign_period_metrics(
+    client,
+    customer_id: str,
+    date_range: DateRange,
+) -> list[CampaignPeriodMetrics]:
+    setup_query = f"""
+        SELECT
+          campaign.id,
+          campaign.name,
+          campaign.status,
+          campaign.advertising_channel_type,
+          campaign.bidding_strategy_type,
+          metrics.impressions,
+          metrics.clicks,
+          metrics.cost_micros,
+          metrics.conversions,
+          metrics.conversions_value
+        FROM campaign
+        WHERE segments.date BETWEEN '{date_range.start_date}' AND '{date_range.end_date}'
+    """
+    fallback_query = f"""
+        SELECT
+          campaign.id,
+          campaign.name,
+          campaign.status,
+          metrics.impressions,
+          metrics.clicks,
+          metrics.cost_micros,
+          metrics.conversions,
+          metrics.conversions_value
+        FROM campaign
+        WHERE segments.date BETWEEN '{date_range.start_date}' AND '{date_range.end_date}'
+    """
+    last_error: Exception | None = None
+
+    for query in (setup_query, fallback_query):
+        campaigns: dict[tuple[int | None, str], CampaignPeriodMetrics] = defaultdict(CampaignPeriodMetrics)
+        ga_service = client.get_service("GoogleAdsService")
+
+        try:
+            response = ga_service.search_stream(customer_id=customer_id, query=query)
+
+            for batch in response:
+                for row in batch.results:
+                    campaign = campaigns[(getattr(row.campaign, "id", None), row.campaign.name)]
+                    campaign.campaign_id = getattr(row.campaign, "id", None)
+                    campaign.campaign_name = row.campaign.name
+                    campaign.campaign_status = _enum_name(getattr(row.campaign, "status", ""))
+                    campaign.advertising_channel_type = _enum_name(
+                        getattr(row.campaign, "advertising_channel_type", "")
+                    )
+                    campaign.bidding_strategy_type = _enum_name(
+                        getattr(row.campaign, "bidding_strategy_type", "")
+                    )
+                    campaign.impressions += row.metrics.impressions
+                    campaign.clicks += row.metrics.clicks
+                    campaign.cost += row.metrics.cost_micros / 1_000_000
+                    campaign.conversions += row.metrics.conversions
+                    campaign.conversion_value += row.metrics.conversions_value
+                    campaign.period_label = date_range.period_label
+                    campaign.start_date = date_range.start_date
+                    campaign.end_date = date_range.end_date
+
+            return list(campaigns.values())
+        except Exception as exc:
+            last_error = exc
+
+    raise GoogleAdsClientError(f"Campaign evidence query failed: {last_error}") from last_error

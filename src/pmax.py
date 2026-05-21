@@ -82,9 +82,21 @@ def _aggregate_row(
     metrics.conversion_value += row.metrics.conversions_value
 
 
-def fetch_pmax_asset_groups(client, customer_id: str) -> list[PMaxAssetGroupMetrics]:
+def _date_filter(start_date: str | None = None, end_date: str | None = None) -> str:
+    if start_date and end_date:
+        return f"segments.date BETWEEN '{start_date}' AND '{end_date}'"
+    return "segments.date DURING LAST_30_DAYS"
+
+
+def fetch_pmax_asset_groups(
+    client,
+    customer_id: str,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> list[PMaxAssetGroupMetrics]:
+    date_filter = _date_filter(start_date, end_date)
     queries = (
-        """
+        f"""
         SELECT
           campaign.id,
           campaign.name,
@@ -100,10 +112,10 @@ def fetch_pmax_asset_groups(client, customer_id: str) -> list[PMaxAssetGroupMetr
           metrics.conversions,
           metrics.conversions_value
         FROM asset_group
-        WHERE segments.date DURING LAST_30_DAYS
+        WHERE {date_filter}
           AND campaign.advertising_channel_type = 'PERFORMANCE_MAX'
         """,
-        """
+        f"""
         SELECT
           campaign.id,
           campaign.name,
@@ -118,9 +130,9 @@ def fetch_pmax_asset_groups(client, customer_id: str) -> list[PMaxAssetGroupMetr
           metrics.conversions,
           metrics.conversions_value
         FROM asset_group
-        WHERE segments.date DURING LAST_30_DAYS
+        WHERE {date_filter}
         """,
-        """
+        f"""
         SELECT
           campaign.name,
           asset_group.name,
@@ -131,7 +143,7 @@ def fetch_pmax_asset_groups(client, customer_id: str) -> list[PMaxAssetGroupMetr
           metrics.conversions,
           metrics.conversions_value
         FROM asset_group
-        WHERE segments.date DURING LAST_30_DAYS
+        WHERE {date_filter}
         """,
     )
     last_error: Exception | None = None
